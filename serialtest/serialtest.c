@@ -4,26 +4,16 @@
 *
 * @author Alvaro Prieto
 */
-#include <cc430.h>
-#include <stdint.h>
+#include "common.h"
 
-
+#include "intrinsics.h"
 #include "oscillator.h"
 #include "leds.h"
 #include "uart.h"
 
-/* Brute Force delay loop */
-void delay(unsigned int d)
-{
-    for (; d>0; d--) {
-        nop();
-        nop();
-    }
-}
-
 int main( void )
 {
-  
+  uint8_t string[] = "UART Test Program!\r\nEcho mode...\r\n";
   /* Init watchdog timer to off */
   WDTCTL = WDTPW|WDTHOLD;
   
@@ -34,24 +24,16 @@ int main( void )
   setup_uart();
   
   __bis_SR_register(GIE);		// enable general interrupts
-
-  /* Loop until the universe breaks down */
+  
+  uart_write( string, sizeof(string) );
+  
   for (;;) {
-    /* Toggle P1.0 ouput pin */
+    
     led1_toggle();
 
-    /* Delay for a while before blinking */
-    delay(0x4fff);
-    delay(0x4fff);
-    delay(0x4fff);
-    delay(0x4fff);
-    delay(0x4fff);
-    delay(0x4fff);
-    delay(0x4fff);
-    delay(0x4fff);
-    delay(0x4fff);
-    delay(0x4fff);
-    delay(0x4fff);
+    
+    _delay_cycles(0x40000);
+    
   }  /* while */
 }
 

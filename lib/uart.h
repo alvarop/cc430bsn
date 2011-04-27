@@ -12,5 +12,9 @@
 
 void setup_uart( void );
 
+void uart_put_char( uint8_t );
+
+void uart_write( uint8_t*, uint16_t );
+
 #endif /* _UART_H */\
 

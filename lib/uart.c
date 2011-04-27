@@ -6,6 +6,8 @@
 */
 #include "uart.h"
 
+static uint8_t tx_buffer;
+
 /*******************************************************************************
  * @fn     void setup_uart( void )
  * @brief  configure uart for 115200BAUD on ports 1.6 and 1.7
@@ -30,6 +32,31 @@ void setup_uart( void )
   UCA0IE |= UCRXIE;                         // Enable USCI_A0 RX interrupt
 }
 
+/*******************************************************************************
+ * @fn     uart_put_char( uint8_t character )
+ * @brief  transmit single character
+ * ****************************************************************************/
+void uart_put_char( uint8_t character )
+{
+  // Enable TX interrupt
+  //UCA0IE |= UCRXIE;
+  while (!(UCA0IFG&UCTXIFG));	// USCI_A0 TX buffer ready?
+  UCA0TXBUF = character;
+}
+
+/*******************************************************************************
+ * @fn     uart_write( uint8_t character )
+ * @brief  transmit single character
+ * ****************************************************************************/
+void uart_write( uint8_t* buffer, uint16_t length )
+{
+  uint16_t buffer_index;
+  
+  for( buffer_index = 0; buffer_index < length; buffer_index++ )
+  {
+    uart_put_char( buffer[buffer_index] );
+  }
+}
 
 /*******************************************************************************
  * @fn     void uart_isr( void )
@@ -54,7 +81,8 @@ wakeup interrupt ( USCI_A0_VECTOR ) uart_isr(void) // CHANGE
     }
     case 4:	// Vector 4 - TXIFG
     {
-
+      
+      
       break;
     }
 

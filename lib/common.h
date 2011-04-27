@@ -8,6 +8,7 @@
 #define _COMMON_H
 
 #include <cc430.h>
+#include <stdint.h>
 
 
 #endif /* _COMMON_H */\
