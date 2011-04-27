@@ -7,7 +7,7 @@
 #ifndef _COMMON_H
 #define _COMMON_H
 
-#include <cc430.h>
+#include <io.h>
 #include <stdint.h>
 
 

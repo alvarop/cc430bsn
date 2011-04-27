@@ -30,7 +30,6 @@ int main( void )
   for (;;) {
     
     led1_toggle();
-
     
     _delay_cycles(0x40000);
     

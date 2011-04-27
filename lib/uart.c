@@ -6,8 +6,6 @@
 */
 #include "uart.h"
 
-static uint8_t tx_buffer;
-
 /*******************************************************************************
  * @fn     void setup_uart( void )
  * @brief  configure uart for 115200BAUD on ports 1.6 and 1.7
