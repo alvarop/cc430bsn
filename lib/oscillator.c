@@ -35,7 +35,7 @@ void setup_oscillator( void )
   // changed is n x 32 x 32 x f_MCLK / f_FLL_reference. See UCS chapter in 5xx
   // UG for optimization.
   // 32 x 32 x 8 MHz / 32,768 Hz = 250000 = MCLK cycles for DCO to settle
-  _delay_cycles(250000); // CHANGE
+  __delay_cycles(250000); // CHANGE
 
   // Loop until XT1 & DCO stabilizes, use do-while to insure that
   // body is executed at least once

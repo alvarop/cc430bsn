@@ -99,3 +99,14 @@ void __inline__ led3_toggle( )
 {
   PJOUT ^= 0x04;
 }
+
+/*******************************************************************************
+ * @fn     void leds_write( uint8_t value )
+ * @brief  change all LEDs at once
+ * ****************************************************************************/
+void __inline__ leds_write( uint8_t value )
+{
+  PJOUT &= ~0x07; // Clear LEDS
+  PJOUT ^= ( value ) & 0x07; // Write value
+}
+

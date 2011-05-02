@@ -12,7 +12,7 @@
  * @brief  delay for 'cycles' number of cycles
  * used by: rf1a.c, bsp_board.c 
  * ****************************************************************************/
-void _delay_cycles(unsigned long cycles)
+void __delay_cycles(unsigned long cycles)
 {
    
    for( ; cycles > 0; cycles-- ) {

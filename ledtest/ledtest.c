@@ -23,7 +23,7 @@ int main( void )
     led3_toggle();
 
     /* Delay for a while before blinking */
-    _delay_cycles(0x4fff);
+    __delay_cycles(0x4fff);
 
   }  
 }

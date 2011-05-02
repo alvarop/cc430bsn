@@ -23,5 +23,7 @@ void __inline__ led3_on( );
 void __inline__ led3_off( );
 void __inline__ led3_toggle( );
 
+void __inline__ leds_write( uint8_t );
+
 #endif /* _LEDS_H */\
 

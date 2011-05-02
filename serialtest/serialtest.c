@@ -31,7 +31,7 @@ int main( void )
     
     led1_toggle();
     
-    _delay_cycles(0x40000);
+    __delay_cycles(0x40000);
     
   }  /* while */
 }

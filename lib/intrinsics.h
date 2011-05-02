@@ -9,7 +9,7 @@
 
 #include "common.h"
 
-void _delay_cycles(unsigned long cycles);
+void __delay_cycles(unsigned long cycles);
 void  __set_interrupt_state(unsigned short state);
 unsigned short __even_in_range(unsigned short value, unsigned short bound);
 unsigned short __get_interrupt_state(void);
