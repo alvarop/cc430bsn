@@ -21,12 +21,14 @@ SERIALTEST_OBJS += \
 	$(LIB_OBJS) \
 	serialtest/serialtest.o
 
+RADIOTEST_OBJS += \
+	$(LIB_OBJS) \
+	radiotest/radiotest.o
+
 CFLAGS += \
 	-mmcu=$(CPU) -O1 -mno-stack-init -mendup-at=main -Wall -g \
 	-D"__CC430F6137__" \
-	-D"MRFI_CC430" \
-	-D"__TI_COMPILER_VERSION__" \
-	-D"__MSP430__" \
+	-DMHZ_915 \
 	-I"." \
 	-I"lib" \
 	
@@ -41,9 +43,10 @@ clean:
 $(addprefix $(BUILD_DIR)/, %.o): %.c
 	@echo
 	@echo [$<]
-	@$(CC) $(CFLAGS) -c $<
+	$(CC) $(CFLAGS) -c $<
 	@mkdir -p $(dir $@)
 	@mv $(notdir $@) $(dir $@)
+#	$(CC) -c -g -Wa,-a,-ad $(CFLAGS) $< > $(BUILD_DIR)/$<.lst
 
 ledtest: $(addprefix $(BUILD_DIR)/, $(LEDTEST_OBJS))
 	@echo
@@ -60,6 +63,14 @@ serialtest: $(addprefix $(BUILD_DIR)/, $(SERIALTEST_OBJS))
 		$(addprefix $(BUILD_DIR)/, program.elf) $(LFLAGS)
 	@echo
 	@echo serialtest build complete
+
+radiotest: $(addprefix $(BUILD_DIR)/, $(RADIOTEST_OBJS))
+	@echo
+	@echo Invoking linker
+	$(CC) $(CFLAGS) $(addprefix $(BUILD_DIR)/, $(RADIOTEST_OBJS)) -o \
+		$(addprefix $(BUILD_DIR)/, program.elf) $(LFLAGS)
+	@echo
+	@echo radiotest build complete
 
 program: 
 	sudo mspdebug rf2500 "prog $(addprefix $(BUILD_DIR)/, program.elf)"

@@ -1,0 +1,39 @@
+/** @file radiotest.c
+*
+* @brief Testing radio
+*
+* @author Alvaro Prieto
+*/
+#include "common.h"
+
+#include "intrinsics.h"
+#include "oscillator.h"
+#include "leds.h"
+
+int main( void )
+{
+
+  /* Init watchdog timer to off */
+  WDTCTL = WDTPW|WDTHOLD;
+  
+  setup_oscillator();
+
+  setup_leds();
+  
+   
+  __bis_SR_register(GIE);		// enable general interrupts
+  
+  
+  for (;;) {
+    
+    led1_toggle();
+    
+    _delay_cycles(0x40000);
+    
+  }  
+}
+
+
+
+
+
