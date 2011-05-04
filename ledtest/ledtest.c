@@ -10,10 +10,12 @@
 #include "timers.h"
 #include <signal.h>
 
-void blink_led (void)
+uint8_t blink_led1 (void)
 {
   led1_toggle();
   increment_ccr( 1, 10900 );
+  
+  return 1;
 }
 
 int main( void )
@@ -25,20 +27,20 @@ int main( void )
   setup_leds();
   setup_timer_a();
   
-  register_timer_callback( blink_led, 1 );
+  register_timer_callback( blink_led1, 1 );
 
   set_ccr( 1, 10900);
   
-  clear_ccr( 2 );
   
   eint();
 
   for(;;) {
     // Toggle all three leds
     //led1_toggle();
-
+    __bis_SR_register(LPM3_bits);
     /* Delay for a while before blinking */
-    __delay_cycles(0x4fff);
+    __no_operation();
+    led2_toggle();
 
   }  
 }

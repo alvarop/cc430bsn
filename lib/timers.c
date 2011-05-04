@@ -6,31 +6,26 @@
 */
 #include "timers.h"
 #include <signal.h>
-#include "leds.h"
 
-static void dummy_callback( void );
 
-static void (*ccr_callbacks[TOTAL_CCRS + 1])( void );
+static uint8_t dummy_callback( void );
+
+// Holds pointers to all callback functions for CCR registers (and overflow)
+static uint8_t (*ccr_callbacks[TOTAL_CCRS + 1])( void ) ;
 
 /*******************************************************************************
  * @fn     void setup_timer_a( void )
- * @brief  configure timer_a
+ * @brief  Initialize callback functions and start timer in up mode
  * ****************************************************************************/
 void setup_timer_a( void )
 {
     uint8_t index;
     
+    // Make sure all callback functions are pointing somewhere
     for( index = 0; index <= TOTAL_CCRS; index++ )
     {
       ccr_callbacks[index] = dummy_callback;
     }
-  	//TA0CCTL0 = CCIE;                       			// CCR0 interrupt enabled
-  	//TA0CCTL1 = CCIE;                       			// CCR1 interrupt enabled
-  	//TA0CCTL2 = CCIE;                       			// CCR2 interrupt enabled
-
-  	//TA0CCR0 = TIMER_LIMIT;
-  	//TA0CCR1 = ADC12_SAMPLE_RATE;
-  	//TA0CCR2 = OLED_REFRESH_RATE; 					// 16-bit, 32 ~= 1 ms, 32000 ~= 1 sec
 
     // ACLK, continuos mode, clear TAR
 		// ACLK used so that counter remains active in LPM
@@ -39,12 +34,12 @@ void setup_timer_a( void )
 }
 
 /*******************************************************************************
- * @fn     void setup_timer_a( void (*callback)(void), uint8_t ccr_number )
- * @brief  configure timer_a
+ * @fn     register_timer_callback( uint8_t (*callback)(void), uint8_t ccr_number )
+ * @brief  add callback function for CCR[ccr_number]
  * ****************************************************************************/
-void register_timer_callback( void (*callback)(void), uint8_t ccr_number )
+void register_timer_callback( uint8_t (*callback)(void), uint8_t ccr_number )
 {
-  if( ccr_number <= (TOTAL_CCRS + 1) )
+  if( ccr_number <= (TOTAL_CCRS) )
   {
     ccr_callbacks[ccr_number] = callback;
   }
@@ -139,7 +134,7 @@ void clear_ccr( uint8_t ccr_index )
 
 /*******************************************************************************
  * @fn     increment_ccr( uint8_t ccr_index, uint16_t value )
- * @brief  increment the CCR by value
+ * @brief  increment the CCR by [value]
  * ****************************************************************************/
 void increment_ccr( uint8_t ccr_index, uint16_t value )
 {
@@ -177,16 +172,18 @@ void increment_ccr( uint8_t ccr_index, uint16_t value )
  * @fn     void dummy_callback( void )
  * @brief  empty function works as default callback
  * ****************************************************************************/
-static void dummy_callback( void )
+static uint8_t dummy_callback( void )
 {
-  
+  __no_operation();
+
+  return 0;
 }
 
  /*******************************************************************************
  * @fn     void timerA0Interrupt( void )
  * @brief  Timer0 A0 Interrupt vector for CCR0
  * ****************************************************************************/
-wakeup interrupt (TIMER0_A0_VECTOR) timerA0Interrupt(void)
+interrupt (TIMER0_A0_VECTOR) timerA0Interrupt(void)
 {  
 
   ccr_callbacks[0]();
@@ -197,9 +194,9 @@ wakeup interrupt (TIMER0_A0_VECTOR) timerA0Interrupt(void)
  * @fn     void timerA1Interrupt( void )
  * @brief  Timer0 A1 Interrupt vector for CCR1-4 and overflow
  * ****************************************************************************/
-wakeup interrupt (TIMER0_A1_VECTOR) timerA1Interrupt(void) // CHANGE
+interrupt (TIMER0_A1_VECTOR) timerA1Interrupt(void) // CHANGE
 {
-
+  uint8_t wake_up = 0;
 	//
 	// Figure out what caused the interrupt and respond accordingly
 	//
@@ -208,31 +205,31 @@ wakeup interrupt (TIMER0_A1_VECTOR) timerA1Interrupt(void) // CHANGE
 
 		case ( TIV_CCR1 ):
     {
-      ccr_callbacks[1]();
+      wake_up = ccr_callbacks[1]();
 		  break;
     }
     
     case ( TIV_CCR2 ):
     {
-      ccr_callbacks[2]();
+      wake_up = ccr_callbacks[2]();
 		  break;
     }
     
     case ( TIV_CCR3 ):
     {
-      ccr_callbacks[3]();
+      wake_up = ccr_callbacks[3]();
 		  break;
     }
     
     case ( TIV_CCR4 ):
     {
-      ccr_callbacks[4]();
+      wake_up = ccr_callbacks[4]();
 		  break;
     }
     
 		case ( TIV_OVERFLOW ):
     { 
-      ccr_callbacks[5]();
+      wake_up = ccr_callbacks[5]();
 			break;
     }
     
@@ -240,6 +237,12 @@ wakeup interrupt (TIMER0_A1_VECTOR) timerA1Interrupt(void) // CHANGE
     {
 			break;
 		}
+	}
+	
+	// Depending on the return value of the callback function, exit LPM3
+	if( wake_up )
+	{
+	  __bic_SR_register_on_exit(LPM3_bits);
 	}
 
 }
