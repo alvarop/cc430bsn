@@ -1,8 +1,16 @@
-
+/** @file RfRegSettings.c
+*
+* @brief CC430 Radio settings
+*
+* @author M. Morales/D. Dang from Texas Instruments
+*         modified by Alvaro Prieto
+*/
 #include "RF1A.h"
 
 #ifdef MHZ_915
-
+#ifndef DEVICE_ADDRESS
+#define DEVICE_ADDRESS 0x00
+#endif
 // Chipcon
 // Product = CC430Fx13x
 // Chip version = C   (PG 0.7)
@@ -22,7 +30,7 @@
 // Format of RX/TX data = (0) Normal mode, use FIFOs for RX and TX
 // CRC operation = (1) CRC calculation in TX and CRC check in RX enabled
 // Forward Error Correction = 
-// Length configuration = (0) Fixed packet length, packet length configured by PKTLEN
+// Length configuration = (1) Variable length packets, packet length configured by the first received byte after sync word.
 // Packetlength = 61
 // Preamble count = (2)  4 bytes
 // Append status = 1
@@ -42,7 +50,7 @@ RF_SETTINGS rfSettings = {
     0x93,   // MDMCFG2   Modem configuration.
     0x22,   // MDMCFG1   Modem configuration.
     0xF8,   // MDMCFG0   Modem configuration.
-    0x00,   // CHANNR    Channel number.
+    0x14,   // CHANNR    Channel number.
     0x34,   // DEVIATN   Modem deviation setting (when FSK modulation is enabled).
     0x56,   // FREND1    Front end RX configuration.
     0x10,   // FREND0    Front end TX configuration.
@@ -64,10 +72,51 @@ RF_SETTINGS rfSettings = {
     0x29,   // IOCFG2    GDO2 output pin configuration.
     0x06,   // IOCFG0    GDO0 output pin configuration. Refer to SmartRF® Studio User Manual for detailed pseudo register explanation.
     0x04,   // PKTCTRL1  Packet automation control.
-    0x04,   // PKTCTRL0  Packet automation control.
+    0x05,   // PKTCTRL0  Packet automation control.
     0x00,   // ADDR      Device address.
-    0x05    // PKTLEN    Packet length.
+    0x78    // PKTLEN    Packet length.
 };
+
+#elif defined MHZ_915_CUSTOM
+
+RF_SETTINGS rfSettings = {
+    0x0C,   // FSCTRL1   Frequency synthesizer control.
+    0x00,   // FSCTRL0   Frequency synthesizer control.
+    0x22,   // FREQ2     Frequency control word, high byte.
+    0xB1,   // FREQ1     Frequency control word, middle byte.
+    0x3B,   // FREQ0     Frequency control word, low byte.
+    0x2D,   // MDMCFG4   Modem configuration.
+    0x3B,   // MDMCFG3   Modem configuration.
+    0x13,   // MDMCFG2   Modem configuration.
+    0x22,   // MDMCFG1   Modem configuration.
+    0xF8,   // MDMCFG0   Modem configuration.
+    0x14,   // CHANNR    Channel number.
+    0x62,   // DEVIATN   Modem deviation setting (when FSK modulation is enabled).
+    0xB6,   // FREND1    Front end RX configuration.
+    0x10,   // FREND0    Front end TX configuration.
+    0x18,   // MCSM0     Main Radio Control State Machine configuration.
+    0x1D,   // FOCCFG    Frequency Offset Compensation Configuration.
+    0x1C,   // BSCFG     Bit synchronization Configuration.
+    0xC7,   // AGCCTRL2  AGC control.
+    0x00,   // AGCCTRL1  AGC control.
+    0xB0,   // AGCCTRL0  AGC control.
+    0xEA,   // FSCAL3    Frequency synthesizer calibration.
+    0x2A,   // FSCAL2    Frequency synthesizer calibration.
+    0x00,   // FSCAL1    Frequency synthesizer calibration.
+    0x1F,   // FSCAL0    Frequency synthesizer calibration.
+    0x59,   // FSTEST    Frequency synthesizer calibration.
+    0x88,   // TEST2     Various test settings.
+    0x31,   // TEST1     Various test settings.
+    0x09,   // TEST0     Various test settings.
+    0x07,   // FIFOTHR   RXFIFO and TXFIFO thresholds.
+    0x29,   // IOCFG2    GDO2 output pin configuration.
+    0x06,   // IOCFG0    GDO0 output pin configuration. Refer to SmartRF® Studio User Manual for detailed pseudo register explanation.
+    0x04,   // PKTCTRL1  Packet automation control.
+    0x05,   // PKTCTRL0  Packet automation control.
+    0x00,   // ADDR      Device address.
+    0x20    // PKTLEN    Packet length.
+};
+
 
 #elif defined MHZ_868
 
@@ -139,6 +188,6 @@ RF_SETTINGS rfSettings = {
 
 #endif
 
-#if !defined (MHZ_868) && !defined (MHZ_915)
+#if !defined (MHZ_868) && !defined (MHZ_915) && !defined (MHZ_915_CUSTOM)
 #error "Please select MHZ_868 or MHZ_915 as the active project configuration" 
 #endif

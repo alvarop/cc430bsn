@@ -25,10 +25,13 @@ RADIOTEST_OBJS += \
 	$(LIB_OBJS) \
 	radiotest/radiotest.o
 
+ADDRESS = 0x00
+
 CFLAGS += \
 	-mmcu=$(CPU) -O1 -mno-stack-init -mendup-at=main -Wall -g \
 	-D"__CC430F6137__" \
 	-DMHZ_915 \
+	-DDEVICE_ADDRESS=$(ADDRESS) \
 	-I"." \
 	-I"lib" \
 	
@@ -43,7 +46,7 @@ clean:
 $(addprefix $(BUILD_DIR)/, %.o): %.c
 	@echo
 	@echo [$<]
-	$(CC) $(CFLAGS) -c $<
+	@$(CC) $(CFLAGS) -c $<
 	@mkdir -p $(dir $@)
 	@mv $(notdir $@) $(dir $@)
 #	$(CC) -c -g -Wa,-a,-ad $(CFLAGS) $< > $(BUILD_DIR)/$<.lst

@@ -1,3 +1,10 @@
+/** @file RF1A.c
+*
+* @brief CC430 Radio communication functions
+*
+* @author M. Morales/D. Dang
+* modified by Alvaro Prieto  
+*/
 #include "RF1A.h"
 #include "intrinsics.h"
 
@@ -10,7 +17,7 @@
 uint8_t Strobe(uint8_t strobe)
 {
   uint8_t statusByte = 0;
-  unsigned int  gdo_state;
+  uint16_t  gdo_state;
   
   // Check for valid strobe command 
   if((strobe == 0xBD) || ((strobe >= RF_SRES) && (strobe <= RF_SNOP)))
@@ -102,7 +109,7 @@ void WriteSingleReg(uint8_t addr, uint8_t value)
 // *****************************************************************************
 void ReadBurstReg(uint8_t addr, uint8_t *buffer, uint8_t count)
 {
-  unsigned int i;
+  uint16_t i;
   if(count > 0)
   {
     while (!(RF1AIFCTL1 & RFINSTRIFG));       // Wait for INSTRIFG

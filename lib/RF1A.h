@@ -1,3 +1,10 @@
+/** @file RF1A.h
+*
+* @brief CC430 Radio communication functions
+*
+* @author M. Morales/D. Dang
+* modified by Alvaro Prieto  
+*/
 #include "common.h"
 
 /* ------------------------------------------------------------------------------------------------
