@@ -96,7 +96,7 @@ int main( void )
     // Enter sleep mode
     __bis_SR_register( LPM3_bits + GIE );
     __no_operation();
-    
+    __no_operation();
     if (buttonPressed) // Process a button press->transmit
     {
       led1_toggle(); // Pulse LED during Transmit

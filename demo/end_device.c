@@ -40,6 +40,7 @@ typedef struct
 uint8_t start_sample();
 uint8_t process_rx( uint8_t*, uint8_t );
 uint8_t send_samples();
+void setup_adc();
 
 
 uint8_t sample_buffer[ADC_MAX_SAMPLES * 2];
@@ -67,6 +68,8 @@ int main( void )
   
   // Initialize UART for communications at 115200baud
   //setup_uart();
+  
+  setup_adc();
    
   // Initialize LEDs
   setup_leds();
@@ -107,28 +110,17 @@ uint8_t start_sample()
 { 
   //TODO Actually use timer functions later
   // Direct access to timer registers for faster development
-  led1_toggle();
+  
+  // Queue ADC conversion
+	ADC12CTL0 |= ADC12SC;
   
   TA0CCR1 += SAMPLE_RATE;
   if (TA0CCR1 > TIMER_LIMIT)
   {
     TA0CCR1 -= TIMER_LIMIT;
   }
-  
-  // This will be in ADC ISR, just testing for now
-  sample_buffer[buffer_index] = buffer_index;        
-  buffer_index++;
-  
-   if ( (ADC_MAX_SAMPLES) == buffer_index )
-  {      
-      current_buffer = 0;
-      
-  }
-  else if( (2*ADC_MAX_SAMPLES) == buffer_index )
-  {
-      buffer_index = 0;
-      current_buffer = 1;       
-  }
+    
+  led1_on();
   
   return 0;
 }
@@ -192,4 +184,58 @@ uint8_t send_samples()
   return 0;
 }
 
+/*******************************************************************************
+ * @fn     void setup_adc()
+ * @brief  TODO (Code from VIBE)
+ * ****************************************************************************/
+void setup_adc()
+{
+  // Enable 2.5V shared reference, disable temperature sensor to save power
+	REFCTL0 |= REFMSTR+REFVSEL_2+REFON+REFTCOFF;
+
+  /* Initialize ADC12_A */
+  ADC12CTL0 = ADC12ON+ADC12SHT0_10;	// Turn on ADC12, set sampling time
+  ADC12CTL1 = ADC12SHP; // Use sampling timer, single channel, single conversion
+  ADC12MCTL0 = ADC12INCH_0;		// ref+=AVcc, channel = A1
+  ADC12IE = 0x01;                           	// Enable ADC12IFG.0
+  ADC12CTL0 |= ADC12ENC;                    	// Enable conversions
+
+}
+
+/**************************************************************************//**
+ * @fn		__interrupt void ADC12ISR (void)
+ * @brief	ADC ISR. Peripherals using ADC include:
+ * 			gyroscope - 3 channels for triple-axis gyro data
+ * ***************************************************************************/
+wakeup interrupt (ADC12_VECTOR) ADC12ISR(void) 	// CHANGE
+{
+	switch(ADC12IV)
+	{
+	case  6:	// Vector  6:  ADC12IFG0
+
+    // This will be in ADC ISR, just testing for now
+    sample_buffer[buffer_index] = (uint8_t)(ADC12MEM0>>4);       
+    buffer_index++;
+    
+     if ( (ADC_MAX_SAMPLES) == buffer_index )
+    {      
+        current_buffer = 0;
+        
+    }
+    else if( (2*ADC_MAX_SAMPLES) == buffer_index )
+    {
+        buffer_index = 0;
+        current_buffer = 1;       
+    }
+
+		led1_off();
+		break;
+
+	default: break;
+	}
+
+  // Exit from low-power mode on return from interrupt
+//	_BIC_SR_IRQ(LPM0_bits);
+
+}
 
