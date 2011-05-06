@@ -25,12 +25,20 @@ RADIOTEST_OBJS += \
 	$(LIB_OBJS) \
 	radiotest/radiotest.o
 
+DEMOAP_OBJS += \
+	$(LIB_OBJS) \
+	demo/access_point.o
+
+DEMOED_OBJS += \
+	$(LIB_OBJS) \
+	demo/end_device.o
+
 ADDRESS = 0x00
 
 CFLAGS += \
 	-mmcu=$(CPU) -O1 -mno-stack-init -mendup-at=main -Wall -g \
 	-D"__CC430F6137__" \
-	-DMHZ_915 \
+	-DMHZ_915_CUSTOM \
 	-DDEVICE_ADDRESS=$(ADDRESS) \
 	-I"." \
 	-I"lib" \
@@ -74,6 +82,22 @@ radiotest: $(addprefix $(BUILD_DIR)/, $(RADIOTEST_OBJS))
 		$(addprefix $(BUILD_DIR)/, program.elf) $(LFLAGS)
 	@echo
 	@echo radiotest build complete
+
+demoap: $(addprefix $(BUILD_DIR)/, $(DEMOAP_OBJS))
+	@echo
+	@echo Invoking linker
+	$(CC) $(CFLAGS) $(addprefix $(BUILD_DIR)/, $(DEMOAP_OBJS)) -o \
+		$(addprefix $(BUILD_DIR)/, program.elf) $(LFLAGS)
+	@echo
+	@echo demoap build complete
+
+demoed: $(addprefix $(BUILD_DIR)/, $(DEMOED_OBJS))
+	@echo
+	@echo Invoking linker
+	$(CC) $(CFLAGS) $(addprefix $(BUILD_DIR)/, $(DEMOED_OBJS)) -o \
+		$(addprefix $(BUILD_DIR)/, program.elf) $(LFLAGS)
+	@echo
+	@echo demoed build complete
 
 program: 
 	sudo mspdebug rf2500 "prog $(addprefix $(BUILD_DIR)/, program.elf)"
