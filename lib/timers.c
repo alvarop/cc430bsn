@@ -12,14 +12,16 @@ static uint8_t dummy_callback( void );
 
 // Holds pointers to all callback functions for CCR registers (and overflow)
 static uint8_t (*ccr_callbacks[TOTAL_CCRS + 1])( void ) ;
+static uint8_t timer_mode;
 
 /*******************************************************************************
- * @fn     void setup_timer_a( void )
+ * @fn     void setup_timer_a( uint8_t mode )
  * @brief  Initialize callback functions and start timer in up mode
  * ****************************************************************************/
-void setup_timer_a( void )
+void setup_timer_a( uint8_t mode )
 {
     uint8_t index;
+    timer_mode = mode;
     
     // Make sure all callback functions are pointing somewhere
     for( index = 0; index <= TOTAL_CCRS; index++ )
@@ -29,7 +31,7 @@ void setup_timer_a( void )
 
     // ACLK, continuos mode, clear TAR
 		// ACLK used so that counter remains active in LPM
-  	TA0CTL = TASSEL__ACLK + MC_2 + TAIE + TACLR;	
+  	TA0CTL = TASSEL__ACLK + timer_mode + TAIE + TACLR;	
 
 }
 
@@ -166,6 +168,15 @@ void increment_ccr( uint8_t ccr_index, uint16_t value )
       break;
     }
   }
+}
+
+/*******************************************************************************
+ * @fn     void dummy_callback( void )
+ * @brief  empty function works as default callback
+ * ****************************************************************************/
+inline void clear_timer()
+{
+  TA0CTL = TASSEL__ACLK + MC_1 + TAIE + TACLR;
 }
 
 /*******************************************************************************

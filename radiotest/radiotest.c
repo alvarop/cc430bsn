@@ -80,7 +80,7 @@ int main( void )
   setup_leds();
   
   // Initialize timer
-  setup_timer_a();
+  setup_timer_a(MODE_CONTINUOUS);
   
   // Send fake button press every ~2 seconds
   register_timer_callback( fake_button_press, TOTAL_CCRS );

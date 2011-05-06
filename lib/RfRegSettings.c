@@ -9,7 +9,7 @@
 
 #ifdef MHZ_915
 #ifndef DEVICE_ADDRESS
-#define DEVICE_ADDRESS 0x00
+#define DEVICE_ADDRESS 0x01
 #endif
 // Chipcon
 // Product = CC430Fx13x
@@ -114,7 +114,7 @@ RF_SETTINGS rfSettings = {
     0x04,   // PKTCTRL1  Packet automation control.
     0x05,   // PKTCTRL0  Packet automation control.
     0x00,   // ADDR      Device address.
-    0x20    // PKTLEN    Packet length.
+    0x78    // PKTLEN    Packet length.
 };
 
 

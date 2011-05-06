@@ -171,7 +171,12 @@ wakeup interrupt (CC1101_VECTOR) radio_isr (void)
             // Otherwise, stay in whatever mode it is in.
             __bic_SR_register_on_exit(LPM3_bits);
           }
+                    
         }
+        
+        // Not sure why this is needed, but it fixes a problem of not
+        // receiving messages after the first one comes in
+        rx_enable();
         
       }
       else if(radio_mode == RADIO_TX)

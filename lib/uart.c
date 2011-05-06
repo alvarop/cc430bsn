@@ -44,7 +44,7 @@ void uart_put_char( uint8_t character )
 
 /*******************************************************************************
  * @fn     uart_write( uint8_t character )
- * @brief  transmit single character
+ * @brief  transmit whole buffer
  * ****************************************************************************/
 void uart_write( uint8_t* buffer, uint16_t length )
 {
@@ -54,6 +54,30 @@ void uart_write( uint8_t* buffer, uint16_t length )
   {
     uart_put_char( buffer[buffer_index] );
   }
+}
+
+/*******************************************************************************
+ * @fn     uart_write_escaped( uint8_t character )
+ * @brief  transmit whole buffer while escaping characters
+ * ****************************************************************************/
+void uart_write_escaped( uint8_t* buffer, uint16_t length )
+{
+  uint16_t buffer_index;
+    
+  uart_put_char( 0x7e );
+  for( buffer_index = 0; buffer_index < length; buffer_index++ )
+  {
+    if( (buffer[buffer_index] == 0x7e) | (buffer[buffer_index] == 0x7d) )
+    {
+      uart_put_char( 0x7d ); // Escape byte
+      uart_put_char( buffer[buffer_index] ^ 0x20 );
+    }
+    else
+    {
+      uart_put_char( buffer[buffer_index] );
+    }
+  }
+  uart_put_char( 0x7e );
 }
 
 /*******************************************************************************

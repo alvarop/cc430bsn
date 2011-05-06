@@ -25,7 +25,7 @@ int main( void )
 
   // Initialize LEDs
   setup_leds();
-  setup_timer_a();
+  setup_timer_a(MODE_CONTINUOUS);
   
   register_timer_callback( blink_led1, 1 );
 
