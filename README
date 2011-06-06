@@ -1,0 +1,20 @@
+cc430bsn Project README
+by Alvaro Prieto (axp8664@rit.edu)
+
+--Building/Programming Programs--
+To build a project, run command from cc430bsn directory
+'make projectname'
+or
+'make clean projectname'
+
+Programming via the rf2500 dongle is also a makefile feature called by
+'make program'
+
+An example of a complete all-in-one command is
+'make clean projectname ADDRESS=0x05 program'
+
+
+--Makefile Configuration--
+Each project is located in its own folder inside the cc430bsn directory. Inside each projects directory, a file, usually called projectname.mk contains makefile commands/definitions specific to that project.
+
+The Makefile in the cc430bsn directory contains all common and library definitions and includes all of the *.mk files from subdirectories.

@@ -13,26 +13,8 @@ LIB_SOURCE = $(wildcard lib/*.c)
 
 LIB_OBJS = $(patsubst %.c, %.o, $(LIB_SOURCE))
 
-LEDTEST_OBJS += \
-	$(LIB_OBJS) \
-	ledtest/ledtest.o
-
-SERIALTEST_OBJS += \
-	$(LIB_OBJS) \
-	serialtest/serialtest.o
-
-RADIOTEST_OBJS += \
-	$(LIB_OBJS) \
-	radiotest/radiotest.o
-
-DEMOAP_OBJS += \
-	$(LIB_OBJS) \
-	demo/access_point.o
-
-DEMOED_OBJS += \
-	$(LIB_OBJS) \
-	demo/end_device.o
-
+# Device radio address defaults to zero here
+# Can be changed by adding 'ADDRESS=0xXX' to the make command
 ADDRESS = 0x00
 
 CFLAGS += \
@@ -42,10 +24,11 @@ CFLAGS += \
 	-DDEVICE_ADDRESS=$(ADDRESS) \
 	-I"." \
 	-I"lib" \
-	
-# Include additional header file directories based on build target.
-ledtest: CFLAGS += -I"accessPoint"
 
+# Include makefile definitions from each subfolder
+include */*.mk
+
+# Get rid of any build files
 clean:
 	@echo
 	@echo Cleaning target
@@ -59,45 +42,7 @@ $(addprefix $(BUILD_DIR)/, %.o): %.c
 	@mv $(notdir $@) $(dir $@)
 #	$(CC) -c -g -Wa,-a,-ad $(CFLAGS) $< > $(BUILD_DIR)/$<.lst
 
-ledtest: $(addprefix $(BUILD_DIR)/, $(LEDTEST_OBJS))
-	@echo
-	@echo Invoking linker
-	$(CC) $(CFLAGS) $(addprefix $(BUILD_DIR)/, $(LEDTEST_OBJS)) -o \
-		$(addprefix $(BUILD_DIR)/, program.elf) $(LFLAGS)
-	@echo
-	@echo ledtest build complete
-
-serialtest: $(addprefix $(BUILD_DIR)/, $(SERIALTEST_OBJS))
-	@echo
-	@echo Invoking linker
-	$(CC) $(CFLAGS) $(addprefix $(BUILD_DIR)/, $(SERIALTEST_OBJS)) -o \
-		$(addprefix $(BUILD_DIR)/, program.elf) $(LFLAGS)
-	@echo
-	@echo serialtest build complete
-
-radiotest: $(addprefix $(BUILD_DIR)/, $(RADIOTEST_OBJS))
-	@echo
-	@echo Invoking linker
-	$(CC) $(CFLAGS) $(addprefix $(BUILD_DIR)/, $(RADIOTEST_OBJS)) -o \
-		$(addprefix $(BUILD_DIR)/, program.elf) $(LFLAGS)
-	@echo
-	@echo radiotest build complete
-
-demoap: $(addprefix $(BUILD_DIR)/, $(DEMOAP_OBJS))
-	@echo
-	@echo Invoking linker
-	$(CC) $(CFLAGS) $(addprefix $(BUILD_DIR)/, $(DEMOAP_OBJS)) -o \
-		$(addprefix $(BUILD_DIR)/, program.elf) $(LFLAGS)
-	@echo
-	@echo demoap build complete
-
-demoed: $(addprefix $(BUILD_DIR)/, $(DEMOED_OBJS))
-	@echo
-	@echo Invoking linker
-	$(CC) $(CFLAGS) $(addprefix $(BUILD_DIR)/, $(DEMOED_OBJS)) -o \
-		$(addprefix $(BUILD_DIR)/, program.elf) $(LFLAGS)
-	@echo
-	@echo demoed build complete
+# Program the device with last compiled program using the rf2500 dongle
 
 program: 
 	sudo mspdebug rf2500 "prog $(addprefix $(BUILD_DIR)/, program.elf)"
