@@ -131,6 +131,11 @@ void clear_ccr( uint8_t ccr_index )
       TA0CCTL4 &= ~CCIE;
       break;
     }
+    default:
+    {
+      //Shouldn't happen... 
+      break;   
+    }
   }
 }
 
@@ -166,6 +171,11 @@ void increment_ccr( uint8_t ccr_index, uint16_t value )
     {
       TA0CCR4 += value;
       break;
+    }
+    default:
+    {
+      //Shouldn't happen...  
+      break;  
     }
   }
 }

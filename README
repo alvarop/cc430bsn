@@ -18,3 +18,11 @@ An example of a complete all-in-one command is
 Each project is located in its own folder inside the cc430bsn directory. Inside each projects directory, a file, usually called projectname.mk contains makefile commands/definitions specific to that project.
 
 The Makefile in the cc430bsn directory contains all common and library definitions and includes all of the *.mk files from subdirectories.
+
+
+--Useful References--
+SmartRF Studio from TI can be useful in configuring the radio register settings.
+  http://focus.ti.com/docs/toolsw/folders/print/smartrftm-studio.html
+
+Design Note DN013 is useful for output power table generation for the CC1101/CC430
+  focus.ti.com.cn/cn/lit/an/swra151a/swra151a.pdf

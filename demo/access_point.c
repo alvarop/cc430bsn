@@ -81,7 +81,7 @@ int main( void )
   while (1)
   {
     // Enter sleep mode
-    __bis_SR_register( LPM3_bits + GIE );
+    __bis_SR_register( LPM0_bits + GIE );
     __no_operation();
         
   }
@@ -111,7 +111,7 @@ uint8_t process_rx( uint8_t* buffer, uint8_t size )
   packet_header_t* header;
   static uint8_t counter = 0;
   header = (packet_header_t*)(buffer);
-  header->flags = counter++;
+
   //packet_footer_t* footer;
   // Add one to account for the byte with the packet length
   //footer = (packet_footer_t*)(buffer + header->length + 1 );
