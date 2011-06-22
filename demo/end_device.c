@@ -88,6 +88,12 @@ int main( void )
   // Initialize radio and enable receive callback function
   setup_radio( process_rx );
   
+  // Lower power so relays can be used
+  WriteSinglePATable(0x0D);
+  
+  // Full Power
+  //WriteSinglePATable(0xC0);
+  
   // Enable interrupts, otherwise nothing will work
   eint();
    

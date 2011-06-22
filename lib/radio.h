@@ -23,6 +23,14 @@
 
 #define RX_BUFFER_SIZE 255
 
+// Packet type and flag definitions
+// Should have some structure eventually, but assigning arbitrary values for now
+
+#define ACK_FLAG (1 << 4)
+#define REPEATER_FLAG (1 << 2)
+
+#define POWER_PACKET (0x05)
+
 void setup_radio( uint8_t (*)(uint8_t*, uint8_t) );
 void radio_tx( uint8_t*, uint8_t );
 

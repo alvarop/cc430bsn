@@ -97,8 +97,8 @@ wakeup interrupt ( USCI_A0_VECTOR ) uart_isr(void) // CHANGE
     case 2:	// Vector 2 - RXIFG
     {
 
-      while (!(UCA0IFG&UCTXIFG));	// USCI_A0 TX buffer ready?
-      UCA0TXBUF = UCA0RXBUF;		// TX -> RXed character
+      //while (!(UCA0IFG&UCTXIFG));	// USCI_A0 TX buffer ready?
+      //UCA0TXBUF = UCA0RXBUF;		// TX -> RXed character
       break;
     }
     case 4:	// Vector 4 - TXIFG
