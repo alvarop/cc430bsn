@@ -9,7 +9,11 @@
 
 #include "common.h"
 
+#if defined(__CC430F6137__)
 #define TOTAL_CCRS 5 // Number of capture compare registers
+#elif defined(__MSP430F2274__)
+#define TOTAL_CCRS 3 // Number of capture compare registers
+#endif
 
 #define MODE_OFF MC_0
 #define MODE_UP MC_1

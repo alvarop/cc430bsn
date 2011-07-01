@@ -1,0 +1,97 @@
+/** @file uart_ez430.c
+*
+* @brief UART functions
+*
+* @author Alvaro Prieto
+*/
+#include "uart.h"
+#include "leds.h"
+
+/*******************************************************************************
+ * @fn     void setup_uart( void )
+ * @brief  configure uart for 115200BAUD on ports 1.6 and 1.7
+ * ****************************************************************************/
+void setup_uart( void )
+{
+  //Set up UART TX RX Pins for CC430
+  //PMAPPWD = 0x02D52;                        // Get write-access to port mapping regs 
+  //P3MAP4 = PM_UCA0RXD;                      // Map UCA0RXD output to P1.5
+  //P3MAP5 = PM_UCA0TXD;                      // Map UCA0TXD output to P1.6
+  //PMAPPWD = 0;                              // Lock port mapping registers
+ 
+  P3DIR |= BIT4;                            // Set P3.4 as TX output
+  P3SEL |= BIT4 + BIT5;                     // Select P3.4 & P3.5 to UART function 
+
+  UCA0CTL1 |= UCSWRST;                      // **Put state machine in reset**
+  UCA0CTL1 |= UCSSEL_2;                     // CLK = SMCLK
+  UCA0BR0 = 0xe2;                            // 12MHz/115200=104.167 (see User's Guide)
+  UCA0BR1 = 0x04;                           //
+  UCA0MCTL = UCBRS_0+UCBRF_0;               // Modulation UCBRSx=3, UCBRFx=0
+  UCA0CTL1 &= ~UCSWRST;                     // **Initialize USCI state machine**
+  IE2 |= UCA0RXIE;                         // Enable USCI_A0 RX interrupt
+}
+
+/*******************************************************************************
+ * @fn     uart_put_char( uint8_t character )
+ * @brief  transmit single character
+ * ****************************************************************************/
+void uart_put_char( uint8_t character )
+{
+  // Enable TX interrupt
+  //UCA0IE |= UCRXIE;
+  
+  while (!(IFG2&UCA0TXIFG));	// USCI_A0 TX buffer ready?
+  UCA0TXBUF = character;
+}
+
+/*******************************************************************************
+ * @fn     uart_write( uint8_t character )
+ * @brief  transmit whole buffer
+ * ****************************************************************************/
+void uart_write( uint8_t* buffer, uint16_t length )
+{
+  uint16_t buffer_index;
+  led2_toggle();
+  for( buffer_index = 0; buffer_index < length; buffer_index++ )
+  {
+    uart_put_char( buffer[buffer_index] );
+  }
+}
+
+/*******************************************************************************
+ * @fn     uart_write_escaped( uint8_t character )
+ * @brief  transmit whole buffer while escaping characters
+ * ****************************************************************************/
+void uart_write_escaped( uint8_t* buffer, uint16_t length )
+{
+  uint16_t buffer_index;
+    
+  uart_put_char( 0x7e );
+  for( buffer_index = 0; buffer_index < length; buffer_index++ )
+  {
+    if( (buffer[buffer_index] == 0x7e) | (buffer[buffer_index] == 0x7d) )
+    {
+      uart_put_char( 0x7d ); // Escape byte
+      uart_put_char( buffer[buffer_index] ^ 0x20 );
+    }
+    else
+    {
+      uart_put_char( buffer[buffer_index] );
+    }
+  }
+  uart_put_char( 0x7e );
+}
+
+/*******************************************************************************
+ * @fn     void uart_isr( void )
+ * @brief  UART ISR
+ * ****************************************************************************/
+wakeup interrupt ( USCIAB0TX_VECTOR ) uart_isr(void) // CHANGE
+{
+  //PJOUT ^= 0x2;
+
+  if( IFG2 & UCA0TXIFG )
+  {    
+    
+  }
+}

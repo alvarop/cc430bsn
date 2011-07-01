@@ -7,6 +7,13 @@
 #include "timers.h"
 #include <signal.h>
 
+#if defined(__CC430F6137__)
+#define TIMERA_CCR0_VECTOR TIMER0_A0_VECTOR
+#define TIMERA_OTHER_VECTOR TIMER0_A1_VECTOR
+#elif defined(__MSP430F2274__)
+#define TIMERA_CCR0_VECTOR TIMERA0_VECTOR
+#define TIMERA_OTHER_VECTOR TIMERA1_VECTOR
+#endif
 
 static uint8_t dummy_callback( void );
 
@@ -31,7 +38,9 @@ void setup_timer_a( uint8_t mode )
 
     // ACLK, continuos mode, clear TAR
 		// ACLK used so that counter remains active in LPM
-  	TA0CTL = TASSEL__ACLK + timer_mode + TAIE + TACLR;	
+  	//TA0CTL = TASSEL__ACLK + timer_mode + TAIE + TACLR;
+  	TA0CTL = TASSEL__SMCLK + timer_mode + TAIE + TACLR;	
+  	
 
 }
 
@@ -78,6 +87,7 @@ void set_ccr( uint8_t ccr_index, uint16_t value )
       TA0CCTL2 = CCIE;
       break;
     }
+#if defined(__CC430F6137__)
     case (3):
     {
       TA0CCR3 = value;
@@ -90,6 +100,7 @@ void set_ccr( uint8_t ccr_index, uint16_t value )
       TA0CCTL4 = CCIE;
       break;
     }
+#endif
   }
 }
 
@@ -119,6 +130,7 @@ void clear_ccr( uint8_t ccr_index )
       TA0CCTL2 &= ~CCIE;
       break;
     }
+#if defined(__CC430F6137__)
     case (3):
     {
       TA0CCR3 = 0;
@@ -131,6 +143,7 @@ void clear_ccr( uint8_t ccr_index )
       TA0CCTL4 &= ~CCIE;
       break;
     }
+#endif
     default:
     {
       //Shouldn't happen... 
@@ -162,6 +175,7 @@ void increment_ccr( uint8_t ccr_index, uint16_t value )
       TA0CCR2 += value;
       break;
     }
+#if defined(__CC430F6137__)
     case (3):
     {
       TA0CCR3 += value;
@@ -172,6 +186,7 @@ void increment_ccr( uint8_t ccr_index, uint16_t value )
       TA0CCR4 += value;
       break;
     }
+#endif
     default:
     {
       //Shouldn't happen...  
@@ -200,11 +215,11 @@ static uint8_t dummy_callback( void )
   return 0;
 }
 
- /*******************************************************************************
+/*******************************************************************************
  * @fn     void timerA0Interrupt( void )
  * @brief  Timer0 A0 Interrupt vector for CCR0
  * ****************************************************************************/
-interrupt (TIMER0_A0_VECTOR) timerA0Interrupt(void)
+interrupt (TIMERA_CCR0_VECTOR) timerA0Interrupt(void)
 {  
 
   ccr_callbacks[0]();
@@ -215,7 +230,7 @@ interrupt (TIMER0_A0_VECTOR) timerA0Interrupt(void)
  * @fn     void timerA1Interrupt( void )
  * @brief  Timer0 A1 Interrupt vector for CCR1-4 and overflow
  * ****************************************************************************/
-interrupt (TIMER0_A1_VECTOR) timerA1Interrupt(void) // CHANGE
+interrupt (TIMERA_OTHER_VECTOR) timerA1Interrupt(void) // CHANGE
 {
   uint8_t wake_up = 0;
 	//

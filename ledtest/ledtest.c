@@ -13,7 +13,7 @@
 uint8_t blink_led1 (void)
 {
   led1_toggle();
-  increment_ccr( 1, 10900 );
+  //increment_ccr( 1, 10900 );
   
   return 1;
 }
@@ -37,7 +37,7 @@ int main( void )
   for(;;) {
     // Toggle all three leds
     //led1_toggle();
-    __bis_SR_register(LPM3_bits);
+    __bis_SR_register(LPM0_bits);
     /* Delay for a while before blinking */
     __no_operation();
     led2_toggle();

@@ -1,5 +1,6 @@
 LEDTEST_OBJS += \
-	$(LIB_OBJS) \
+	lib/leds.o \
+	lib/timers.o \
 	ledtest/ledtest.o
 
 ledtest: $(addprefix $(BUILD_DIR)/, $(LEDTEST_OBJS))

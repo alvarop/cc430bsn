@@ -1,5 +1,7 @@
 SERIALTEST_OBJS += \
-	$(LIB_OBJS) \
+	lib/leds.o \
+	lib/uart_ez430.o \
+	lib/intrinsics.o \
 	serialtest/serialtest.o
 
 serialtest: $(addprefix $(BUILD_DIR)/, $(SERIALTEST_OBJS))

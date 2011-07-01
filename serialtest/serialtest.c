@@ -7,7 +7,7 @@
 #include "common.h"
 
 #include "intrinsics.h"
-#include "oscillator.h"
+//#include "oscillator.h"
 #include "leds.h"
 #include "uart.h"
 
@@ -17,8 +17,11 @@ int main( void )
   /* Init watchdog timer to off */
   WDTCTL = WDTPW|WDTHOLD;
   
-  setup_oscillator();
-
+  BCSCTL1 = CALBC1_12MHZ;
+  DCOCTL = CALDCO_12MHZ; 
+  
+  __delay_cycles(0x40000);
+  
   setup_leds();
   
   setup_uart();
@@ -30,7 +33,7 @@ int main( void )
   for (;;) {
     
     led1_toggle();
-    
+    uart_write( string, sizeof(string) );
     __delay_cycles(0x40000);
     
   }  /* while */
