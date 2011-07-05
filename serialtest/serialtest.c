@@ -33,7 +33,7 @@ int main( void )
   for (;;) {
     
     led1_toggle();
-    uart_write( string, sizeof(string) );
+    
     __delay_cycles(0x40000);
     
   }  /* while */

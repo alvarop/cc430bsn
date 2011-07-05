@@ -18,5 +18,7 @@ void uart_write( uint8_t*, uint16_t );
 
 void uart_write_escaped( uint8_t*, uint16_t );
 
+void spi_put_char( uint8_t );
+
 #endif /* _UART_H */\
 
