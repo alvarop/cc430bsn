@@ -5,10 +5,11 @@
 * @author Alvaro Prieto
 */
 #include "cc2500.h"
+#include "intrinsics.h"
 #include "uart.h"
-#include "leds.h"
 
 
+uint8_t buffer[10];
 
 // Phase transition time = 0 
 // Base frequency = 2432.499634 
@@ -31,7 +32,7 @@
 // CRC autoflush = false 
 // TX power = 0 dBm
 cc2500_settings_t cc2500_settings = {
-  0x29,  // IOCFG2              GDO2Output Pin Configuration 
+  0x0B,  // IOCFG2              GDO2Output Pin Configuration 
   0x2E,  // IOCFG1              GDO1Output Pin Configuration 
   0x06,  // IOCFG0              GDO0Output Pin Configuration 
   0x07,  // FIFOTHR             RX FIFO and TX FIFO Thresholds
@@ -40,7 +41,7 @@ cc2500_settings_t cc2500_settings = {
   0xFF,  // PKTLEN              Packet Length 
   0x04,  // PKTCTRL1            Packet Automation Control
   0x05,  // PKTCTRL0            Packet Automation Control
-  0x00,  // ADDR                Device Address 
+  0xcc,  // ADDR                Device Address 
   0xFF,  // CHANNR              Channel Number 
   0x12,  // FSCTRL1             Frequency Synthesizer Control 
   0x00,  // FSCTRL0             Frequency Synthesizer Control 
@@ -80,11 +81,12 @@ cc2500_settings_t cc2500_settings = {
   0x0B,  // TEST0               Various Test Settings 
 };
 
-uint8_t write_default_radio_register ( uint8_t* p_setting )
-{
-    
-  IE2 &= ~UCB0RXIE;          // Disable USCI_B0 RX interrupt
-
+//
+// @fn write_register ( uint8_t* p_setting )
+// @brief Write single register value to CC2500
+//
+void write_register ( uint8_t* p_setting )
+{ 
   //
   // Compute register address using address of parameter in cc2500_settings_t
   // Subtract address of structure from address of parameter
@@ -92,21 +94,208 @@ uint8_t write_default_radio_register ( uint8_t* p_setting )
   
   //
   // Write byte with address and write bit
-  //   
-  spi_put_char( 
-  ( (int8_t)(p_setting - (uint8_t*)&cc2500_settings) ) & ADDRESS_MASK );
-  
-  while( !( IFG2 & UCB0RXIFG ));
-  IFG2 &= ~UCB0RXIFG;
+  //
+         
+  P3OUT &= ~BIT0;                 // CSn enable
+    
+  while ( !( IFG2&UCB0TXIFG ) );	// USCI_B0 TX buffer ready?
+                                  // send address
+  UCB0TXBUF = ( (int8_t)(p_setting - (uint8_t*)&cc2500_settings) ) 
+                                                                & ADDRESS_MASK; 
+    
   //
   // Write data
   //
-  spi_put_char( *p_setting );
-  while( !( IFG2 & UCB0RXIFG ));
-  IFG2 &= ~UCB0RXIFG;
+  while ( !( IFG2&UCB0TXIFG ) );  // USCI_B0 TX buffer ready?
+  UCB0TXBUF = *p_setting;         // Send value
 
-  IE2 |= UCB0RXIE;          // Enable USCI_B0 RX interrupt
-  led1_toggle();
-  return UCB0RXBUF;
+  P3OUT |= BIT0;                  // CSn disable
+  
+}
+
+//
+// @fn write_burst_register( uint8_t address, uint8_t* buffer, uint8_t size )
+// @brief Write multiple values to CC2500
+//
+void write_burst_register( uint8_t address, uint8_t* buffer, uint8_t size )
+{
+  uint16_t index;
+  
+  P3OUT &= ~BIT0;                 // CSn enable
+  
+  while ( !( IFG2&UCB0TXIFG ) );	// USCI_B0 TX buffer ready?
+  UCB0TXBUF = address | BURST_BIT;// send address byte
+  
+  for( index = 0; index < size; index++ )
+  {
+    while ( !( IFG2 & UCB0TXIFG ) );// USCI_B0 TX buffer ready?
+    UCB0TXBUF = buffer[index];
+  }
+  while ( UCB0STAT & UCBUSY );    // wait for TX to complete
+  
+  P3OUT |= BIT0;                  // CSn disable
+}
+
+//
+// @fn uint8_t read_register ( uint8_t* p_setting )
+// @brief read single register from CC2500
+//
+uint8_t read_register ( uint8_t* p_setting )
+{
+  uint8_t rx_char;
+
+  P3OUT &= ~BIT0;                 // CSn enable
+  
+  while (!(IFG2&UCB0TXIFG));	    // USCI_B0 TX buffer ready?
+                                  // send address with read bit
+  UCB0TXBUF = ( 
+  ( (int8_t)(p_setting - (uint8_t*)&cc2500_settings) ) & ADDRESS_MASK )
+                                                                     | RW_BIT; 
+  while ( !( IFG2&UCB0TXIFG ) );	// USCI_B0 TX buffer ready?
+  UCB0TXBUF = 0;                  // dummy write
+
+  while ( UCB0STAT & UCBUSY );    // wait for TX to complete
+  rx_char = UCB0RXBUF;            // Read data
+ 
+  P3OUT |= BIT0;                  // CSn disable
+ 
+  return rx_char; 
+}
+
+//
+// @fn read_burst_register( uint8_t address, uint8_t* buffer, uint8_t size )
+// @brief read multiple registers from CC2500
+//
+void read_burst_register( uint8_t address, uint8_t* buffer, uint8_t size )
+{
+  uint16_t index;
+  
+  P3OUT &= ~BIT0;                 // CSn enable
+  
+  while ( !( IFG2&UCB0TXIFG ) );	// USCI_B0 TX buffer ready?
+                                  // send address byte
+  UCB0TXBUF = address | BURST_BIT | RW_BIT;
+  while ( UCB0STAT & UCBUSY );    // wait for TX to complete
+  UCB0TXBUF = 0;                  // dummy write
+
+  IFG2 &= ~UCB0RXIFG;            // clear rx flag
+                                  // wait for end of first tx byte
+  while ( !( IFG2 & UCB0RXIFG ) );
+  for( index = 0; index < size; index++ )
+  {
+    UCB0TXBUF = 0;                // dummy write
+    buffer[index] = UCB0RXBUF;    // store data byte in buffer
+                                  // wait for RX to finish  
+    while ( !( IFG2 & UCB0RXIFG ) );
+  }
+  buffer[index-1] = UCB0RXBUF;    // store last data byte
+  
+  P3OUT |= BIT0;                  // CSn disable
+}
+
+//
+// @fn uint8_t read_status( uint8_t address )
+// @brief send status command and read returned status byte
+//
+uint8_t read_status( uint8_t address )
+{
+  uint8_t status;
+  
+  P3OUT &= ~BIT0;                 // CSn enable  
+  while ( !( IFG2&UCB0TXIFG ) );	// USCI_B0 TX buffer ready?
+  UCB0TXBUF = address | BURST_BIT | RW_BIT;
+  while ( !( IFG2&UCB0TXIFG ) );	// USCI_B0 TX buffer ready?
+  UCB0TXBUF = 0;                  // dummy write
+  while ( UCB0STAT & UCBUSY );    // wait for TX to complete
+  status = UCB0RXBUF;             // read status byte
+  P3OUT |= BIT0;                  // CSn disable
+  
+  return status;  
+}
+
+//
+// @fn void strobe ( uint8_t strobe_byte )
+// @brief send strobe command
+//
+void strobe ( uint8_t strobe_byte )
+{  
+  P3OUT &= ~BIT0;                 // CSn enable  
+  while ( !( IFG2&UCB0TXIFG ) );	// USCI_B0 TX buffer ready?
+  UCB0TXBUF = strobe_byte;             // send strobe
+  
+  while ( UCB0STAT & UCBUSY );    // wait for TX to complete
+  P3OUT |= BIT0;                  // CSn disable
+}
+
+//
+// @fn void initialize_radio()
+// @brief reset radio
+//
+void initialize_radio()
+{
+  P3OUT |= BIT0;                  // CSn disable
+  __delay_cycles(30);
+  P3OUT &= ~BIT0;                 // CSn enable
+  __delay_cycles(30);
+  P3OUT |= BIT0;                  // CSn disable
+  __delay_cycles(45);
+
+  strobe( SRES );
+}
+
+
+//
+// @fn void write_rf_settings()
+// @brief write radio settings
+//
+void write_rf_settings()
+{
+  write_register( &cc2500_settings.iocfg2 );    // GDO2Output Pin Configuration 
+  //write_register( &cc2500_settings.iocfg1 );    // GDO1Output Pin Configuration 
+  write_register( &cc2500_settings.iocfg0 );    // GDO0Output Pin Configuration 
+  //write_register( &cc2500_settings.fifothr );   // RX FIFO and TX FIFO Thresholds
+  //write_register( &cc2500_settings.sync1 );     // Sync Word, High Byte 
+  //write_register( &cc2500_settings.sync0 );     // Sync Word, Low Byte 
+  write_register( &cc2500_settings.pktlen );    // Packet Length 
+  write_register( &cc2500_settings.pktctrl1 );  // Packet Automation Control
+  write_register( &cc2500_settings.pktctrl0 );  // Packet Automation Control
+  write_register( &cc2500_settings.addr );      // Device Address 
+  write_register( &cc2500_settings.channr );    // Channel Number 
+  write_register( &cc2500_settings.fsctrl1 );   // Frequency Synthesizer Control 
+  write_register( &cc2500_settings.fsctrl0 );   // Frequency Synthesizer Control 
+  write_register( &cc2500_settings.freq2 );     // Frequency Control Word, High Byte 
+  write_register( &cc2500_settings.freq1 );     // Frequency Control Word, Middle Byte 
+  write_register( &cc2500_settings.freq0 );     // Frequency Control Word, Low Byte 
+  write_register( &cc2500_settings.mdmcfg4 );   // Modem Configuration 
+  write_register( &cc2500_settings.mdmcfg3 );   // Modem Configuration 
+  write_register( &cc2500_settings.mdmcfg2 );   // Modem Configuration
+  write_register( &cc2500_settings.mdmcfg1 );   // Modem Configuration
+  write_register( &cc2500_settings.mdmcfg0 );   // Modem Configuration 
+  write_register( &cc2500_settings.deviatn );   // Modem Deviation Setting 
+  write_register( &cc2500_settings.mcsm2 );     // Main Radio Control State Machine Configuration 
+  write_register( &cc2500_settings.mcsm1 );     // Main Radio Control State Machine Configuration
+  write_register( &cc2500_settings.mcsm0 );     // Main Radio Control State Machine Configuration 
+  write_register( &cc2500_settings.foccfg );    // Frequency Offset Compensation Configuration
+  write_register( &cc2500_settings.bscfg );     // Bit Synchronization Configuration
+  write_register( &cc2500_settings.agcctrl2 );  // AGC Control
+  write_register( &cc2500_settings.agcctrl1 );  // AGC Control
+  write_register( &cc2500_settings.agcctrl0 );  // AGC Control
+  //write_register( &cc2500_settings.worevt1 );   // High Byte Event0 Timeout 
+  //write_register( &cc2500_settings.worevt0 );   // Low Byte Event0 Timeout 
+  //write_register( &cc2500_settings.worctrl );   // Wake On Radio Control
+  write_register( &cc2500_settings.frend1 );    // Front End RX Configuration 
+  write_register( &cc2500_settings.frend0 );    // Front End TX configuration 
+  write_register( &cc2500_settings.fscal3 );    // Frequency Synthesizer Calibration 
+  write_register( &cc2500_settings.fscal2 );    // Frequency Synthesizer Calibration 
+  write_register( &cc2500_settings.fscal1 );    // Frequency Synthesizer Calibration 
+  write_register( &cc2500_settings.fscal0 );    // Frequency Synthesizer Calibration 
+  //write_register( &cc2500_settings.rcctrl1 );   // RC Oscillator Configuration 
+  //write_register( &cc2500_settings.rcctrl0 );   // RC Oscillator Configuration 
+  //write_register( &cc2500_settings.fstest );    // Frequency Synthesizer Calibration Control 
+  //write_register( &cc2500_settings.ptest );     // Production Test 
+  //write_register( &cc2500_settings.agctest );   // AGC Test 
+  write_register( &cc2500_settings.test2 );     // Various Test Settings 
+  write_register( &cc2500_settings.test1 );     // Various Test Settings 
+  write_register( &cc2500_settings.test0 );     // Various Test Settings  
 }
 

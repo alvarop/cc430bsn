@@ -24,8 +24,8 @@ void setup_uart( void )
   // but instead of using the built in functions to use it, it will be 
   // controlled as a regular I/O pin
   //  
-  P3DIR |= BIT4 + BIT3 + BIT1 + BIT0; // Set P3.4, P3.3, P3.1, P3.0 as TX output
-  P3SEL |= BIT4 + BIT5 + BIT3 + BIT2 + BIT1; // Select UART/SPI function
+  P3DIR |= BIT4; // Set P3.4 as TX output
+  P3SEL |= BIT4 + BIT5; // Select UART/SPI function
 
 
   // 
@@ -39,22 +39,36 @@ void setup_uart( void )
   UCA0MCTL = UCBRS_1+UCBRF_0;         // Modulation UCBRSx=3, UCBRFx=0
   UCA0CTL1 &= ~UCSWRST;               // **Initialize USCI state machine**
 
+  
+
+  // Enable Interrupts
+  IE2 |= UCA0RXIE;          // Enable USCI_A0/B0 RX interrupt
+
+}
+
+void setup_spi()
+{
+  
   //
   //  Configure SPI
   //
+  
+  P3DIR |= BIT0;  // CSn output
+  P3OUT |= BIT0;  // Disable CSn
 
   UCB0CTL1 = UCSWRST;                   // Put state machine in reset state
-
-  // Initialize USCI Registers
-  UCB0CTL0 = UCMST + UCMODE_0 + UCSYNC; // Master, 3-pin mode, synchronous
-  UCB0CTL1 = UCSWRST + UCSSEL_2;        // Select SMCLK as source
-  UCB0BR0 = 12;                         // 12MHz/12 = 1MHz clock
+  UCB0CTL0 = UCMST + UCCKPH + UCSYNC + UCMSB; // Master,3-pin,MSB first, sync
+  UCB0CTL1 = UCSSEL_2;                  // Select SMCLK as source
+  UCB0BR0 = 2;                         // 12MHz/2 = 6MHz clock
   UCB0BR1 = 0;  
+
+  P3SEL |= BIT3 + BIT2 + BIT1; // Select UART/SPI function
+  P3DIR |= BIT3 + BIT1; // Set P3.3, P3.1 as output
+  
   UCB0CTL1 &= ~UCSWRST;                 // Start state machine
-
-  // Enable Interrupts
-  IE2 |= UCA0RXIE + UCB0RXIE;          // Enable USCI_A0/B0 RX interrupt
-
+  
+  // Enable RX Interrupt
+  //IE2 |= UCB0RXIE;          // Enable USCI_A0/B0 RX interrupt
 }
 
 /*******************************************************************************
@@ -116,7 +130,8 @@ void spi_put_char( uint8_t character )
 {
 
   // Enable CSn
-  P3OUT &= ~BIT0;
+  
+  P3OUT |= BIT0;
   
   // Enable TX interrupts on SPI
   IE2 |= UCB0TXIE;
@@ -168,11 +183,7 @@ wakeup interrupt ( USCIAB0RX_VECTOR ) uart_rx_isr(void) // CHANGE
   {
       led2_on();
       // Send character to Serial
-      rx_char = UCB0RXBUF;
-      hex_to_string( buffer, &rx_char, 1 );
-      uart_write( buffer, 2 );
-      
-      
+      rx_char = UCB0RXBUF;     
   }
 }
 
@@ -186,9 +197,9 @@ wakeup interrupt ( USCIAB0TX_VECTOR ) uart_tx_isr(void) // CHANGE
   if ( IFG2 & UCB0TXIFG )
   {
       // Check if this is a burst transfer, otherwise, pull CSn high
-      P3OUT |= BIT0;
+      P3OUT &= ~BIT0;
       
-      // Enable TX interrupts on SPI
+      // Disable TX interrupts on SPI
       IE2 &= ~UCB0TXIE;
       
       
