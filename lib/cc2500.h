@@ -50,6 +50,8 @@
 #define RXBYTES       0x3B    // Overflow and # of bytes in RXFIFO
 #define NUM_RXBYTES   0x7F    // Mask "# of bytes" field in _RXBYTES
 
+#define LQI_POS       0x01    // Position of LQI byte
+#define CRC_OK        0x80    // Mask "CRC_OK" bit within LQI byte
 
 #define PATABLE       0x3E    // PATABLE address
 #define FIFO          0x3F    // FIFO address

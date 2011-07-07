@@ -47,12 +47,7 @@ void setup_uart( void )
 }
 
 void setup_spi()
-{
-  
-  //
-  //  Configure SPI
-  //
-  
+{  
   P3DIR |= BIT0;  // CSn output
   P3OUT |= BIT0;  // Disable CSn
 
@@ -66,9 +61,7 @@ void setup_spi()
   P3DIR |= BIT3 + BIT1; // Set P3.3, P3.1 as output
   
   UCB0CTL1 &= ~UCSWRST;                 // Start state machine
-  
-  // Enable RX Interrupt
-  //IE2 |= UCB0RXIE;          // Enable USCI_A0/B0 RX interrupt
+
 }
 
 /*******************************************************************************
@@ -170,7 +163,6 @@ uint8_t hex_to_string( uint8_t* buffer_out, uint8_t* buffer_in,
 wakeup interrupt ( USCIAB0RX_VECTOR ) uart_rx_isr(void) // CHANGE
 {
   uint8_t rx_char;
-  uint8_t buffer[10];
   
   // Process incoming byte from USART
   if( IFG2 & UCA0RXIFG )
@@ -181,7 +173,7 @@ wakeup interrupt ( USCIAB0RX_VECTOR ) uart_rx_isr(void) // CHANGE
   // Process incoming byte from SPI
   else if ( IFG2 & UCB0RXIFG )
   {
-      led2_on();
+      //led2_on();
       // Send character to Serial
       rx_char = UCB0RXBUF;     
   }

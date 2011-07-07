@@ -108,7 +108,8 @@ void write_register ( uint8_t* p_setting )
   //
   while ( !( IFG2&UCB0TXIFG ) );  // USCI_B0 TX buffer ready?
   UCB0TXBUF = *p_setting;         // Send value
-
+  while ( UCB0STAT & UCBUSY );    // wait for TX to complete
+  
   P3OUT |= BIT0;                  // CSn disable
   
 }
