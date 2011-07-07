@@ -133,7 +133,7 @@ void write_burst_register( uint8_t, uint8_t*, uint8_t );
 uint8_t read_register ( uint8_t*  );
 void read_burst_register( uint8_t, uint8_t*, uint8_t );
 uint8_t read_status( uint8_t );
-void strobe ( uint8_t );
+uint8_t strobe ( uint8_t );
 void initialize_radio();
 void write_rf_settings();
 #endif /* _CC2500_H */\

@@ -218,14 +218,15 @@ uint8_t read_status( uint8_t address )
 // @fn void strobe ( uint8_t strobe_byte )
 // @brief send strobe command
 //
-void strobe ( uint8_t strobe_byte )
+uint8_t strobe ( uint8_t strobe_byte )
 {  
   P3OUT &= ~BIT0;                 // CSn enable  
   while ( !( IFG2&UCB0TXIFG ) );	// USCI_B0 TX buffer ready?
-  UCB0TXBUF = strobe_byte;             // send strobe
-  
+  UCB0TXBUF = strobe_byte;        // send strobe
   while ( UCB0STAT & UCBUSY );    // wait for TX to complete
   P3OUT |= BIT0;                  // CSn disable
+  
+  return UCB0RXBUF;
 }
 
 //

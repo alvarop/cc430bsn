@@ -48,8 +48,8 @@ void setup_uart( void )
 
 void setup_spi()
 {  
-  P3DIR |= BIT0;  // CSn output
-  P3OUT |= BIT0;  // Disable CSn
+  P3OUT |= BIT0;  // CSn output
+  P3DIR |= BIT0;  // Disable CSn  
 
   UCB0CTL1 = UCSWRST;                   // Put state machine in reset state
   UCB0CTL0 = UCMST + UCCKPH + UCSYNC + UCMSB; // Master,3-pin,MSB first, sync

@@ -40,7 +40,7 @@ void setup_leds( void )
   // Initialize outputs OFF
   LEDOUT  &= ~0x03;
 
-  // Set pins J.0, J.1, and J.2 to outputs
+  // Set pins P1.0 and P1.1 to outputs
   LEDDIR  |= 0x03;
 
 #endif
@@ -133,7 +133,18 @@ void __inline__ led3_toggle( )
  * ****************************************************************************/
 void __inline__ leds_write( uint8_t value )
 {
+  
+  
+#if defined(__CC430F6137__)
+
   LEDOUT &= ~0x07; // Clear LEDS
   LEDOUT ^= ( value ) & 0x07; // Write value
+  
+#elif defined(__MSP430F2274__)
+
+  LEDOUT &= ~0x03; // Clear LEDS
+  LEDOUT ^= ( value ) & 0x03; // Write value
+
+#endif
 }
 
