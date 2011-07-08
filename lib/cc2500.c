@@ -132,8 +132,9 @@ void write_burst_register( uint8_t address, uint8_t* buffer, uint8_t size )
     while ( !( IFG2 & UCB0TXIFG ) );// USCI_B0 TX buffer ready?
     UCB0TXBUF = buffer[index];
   }
+ 
   while ( UCB0STAT & UCBUSY );    // wait for TX to complete
-  
+
   P3OUT |= BIT0;                  // CSn disable
 }
 
@@ -182,14 +183,14 @@ void read_burst_register( uint8_t address, uint8_t* buffer, uint8_t size )
   IFG2 &= ~UCB0RXIFG;            // clear rx flag
                                   // wait for end of first tx byte
   while ( !( IFG2 & UCB0RXIFG ) );
-  for( index = 0; index < size; index++ )
+  for( index = 0; index < (size-1); index++ )
   {
     UCB0TXBUF = 0;                // dummy write
     buffer[index] = UCB0RXBUF;    // store data byte in buffer
                                   // wait for RX to finish  
     while ( !( IFG2 & UCB0RXIFG ) );
   }
-  buffer[index-1] = UCB0RXBUF;    // store last data byte
+  buffer[index] = UCB0RXBUF;    // store last data byte
   
   P3OUT |= BIT0;                  // CSn disable
 }
