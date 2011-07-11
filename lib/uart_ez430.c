@@ -61,6 +61,13 @@ void setup_spi()
   P3DIR |= BIT3 + BIT1; // Set P3.3, P3.1 as output
   
   UCB0CTL1 &= ~UCSWRST;                 // Start state machine
+      
+  //
+  // Configure GDO0 input
+  //
+  P2IES |= BIT6;            // Edge select (high-to-low)
+  P2IFG &= ~BIT6;           // Clear any pending interrupts
+  P2IE |= BIT6;             // Enable interrupts
 
 }
 

@@ -21,8 +21,7 @@ extern cc2500_settings_t cc2500_settings;
 int main( void )
 {
   
-  uint8_t tx_power = 0xFB;
-   
+  uint8_t tx_power = 0xFB;   
   
   /* Init watchdog timer to off */
   WDTCTL = WDTPW|WDTHOLD;
@@ -39,8 +38,6 @@ int main( void )
   uart_write( "Starting...\r\n\n", 14 );
   
   setup_spi();
-  
-  
   
   P2SEL = 0;
   initialize_radio();       // Reset radio
@@ -62,13 +59,6 @@ int main( void )
   P1IE = BIT2;              // Enable interrupts
   
   setup_leds();
-  
-  //
-  // Configure GDO0 input
-  //
-  P2IES |= BIT6;            // Edge select (high-to-low)
-  P2IFG &= ~BIT6;           // Clear any pending interrupts
-  P2IE |= BIT6;             // Enable interrupts
               
   for (;;) 
   {        
