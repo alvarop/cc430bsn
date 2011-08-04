@@ -32,7 +32,7 @@ uint8_t buffer[10];
 // CRC autoflush = false 
 // TX power = 0 dBm
 cc2500_settings_t cc2500_settings = {
-  0x0B,  // IOCFG2              GDO2Output Pin Configuration 
+  0x30,  // IOCFG2              GDO2Output Pin Configuration 
   0x2E,  // IOCFG1              GDO1Output Pin Configuration 
   0x06,  // IOCFG0              GDO0Output Pin Configuration 
   0x07,  // FIFOTHR             RX FIFO and TX FIFO Thresholds
@@ -96,9 +96,9 @@ void write_register ( uint8_t* p_setting )
   // Write byte with address and write bit
   //
          
-  P3OUT &= ~BIT0;                 // CSn enable
+  P1OUT &= ~BIT7;                 // CSn enable
     
-  while ( !( IFG2&UCB0TXIFG ) );	// USCI_B0 TX buffer ready?
+  while ( !( UCB0IFG & UCTXIFG ) );	// USCI_B0 TX buffer ready?
                                   // send address
   UCB0TXBUF = ( (int8_t)(p_setting - (uint8_t*)&cc2500_settings) ) 
                                                                 & ADDRESS_MASK; 
@@ -106,11 +106,11 @@ void write_register ( uint8_t* p_setting )
   //
   // Write data
   //
-  while ( !( IFG2&UCB0TXIFG ) );  // USCI_B0 TX buffer ready?
+  while ( !( UCB0IFG & UCTXIFG ) );  // USCI_B0 TX buffer ready?
   UCB0TXBUF = *p_setting;         // Send value
   while ( UCB0STAT & UCBUSY );    // wait for TX to complete
   
-  P3OUT |= BIT0;                  // CSn disable
+  P1OUT |= BIT7;                  // CSn disable
   
 }
 
@@ -122,20 +122,20 @@ void write_burst_register( uint8_t address, uint8_t* buffer, uint8_t size )
 {
   uint16_t index;
   
-  P3OUT &= ~BIT0;                 // CSn enable
+  P1OUT &= ~BIT7;                 // CSn enable
   
-  while ( !( IFG2&UCB0TXIFG ) );	// USCI_B0 TX buffer ready?
+  while ( !( UCB0IFG & UCTXIFG ) );	// USCI_B0 TX buffer ready?
   UCB0TXBUF = address | BURST_BIT;// send address byte
   
   for( index = 0; index < size; index++ )
   {
-    while ( !( IFG2 & UCB0TXIFG ) );// USCI_B0 TX buffer ready?
+    while ( !( UCB0IFG & UCTXIFG ) );// USCI_B0 TX buffer ready?
     UCB0TXBUF = buffer[index];
   }
  
   while ( UCB0STAT & UCBUSY );    // wait for TX to complete
 
-  P3OUT |= BIT0;                  // CSn disable
+  P1OUT |= BIT7;                  // CSn disable
 }
 
 //
@@ -146,20 +146,20 @@ uint8_t read_register ( uint8_t* p_setting )
 {
   uint8_t rx_char;
 
-  P3OUT &= ~BIT0;                 // CSn enable
+  P1OUT &= ~BIT7;                 // CSn enable
   
-  while (!(IFG2&UCB0TXIFG));	    // USCI_B0 TX buffer ready?
+  while (!(UCB0IFG & UCTXIFG));	    // USCI_B0 TX buffer ready?
                                   // send address with read bit
   UCB0TXBUF = ( 
   ( (int8_t)(p_setting - (uint8_t*)&cc2500_settings) ) & ADDRESS_MASK )
                                                                      | RW_BIT; 
-  while ( !( IFG2&UCB0TXIFG ) );	// USCI_B0 TX buffer ready?
+  while ( !( UCB0IFG & UCTXIFG ) );	// USCI_B0 TX buffer ready?
   UCB0TXBUF = 0;                  // dummy write
 
   while ( UCB0STAT & UCBUSY );    // wait for TX to complete
   rx_char = UCB0RXBUF;            // Read data
  
-  P3OUT |= BIT0;                  // CSn disable
+  P1OUT |= BIT7;                  // CSn disable
  
   return rx_char; 
 }
@@ -172,27 +172,27 @@ void read_burst_register( uint8_t address, uint8_t* buffer, uint8_t size )
 {
   uint16_t index;
   
-  P3OUT &= ~BIT0;                 // CSn enable
+  P1OUT &= ~BIT7;                 // CSn enable
   
-  while ( !( IFG2&UCB0TXIFG ) );	// USCI_B0 TX buffer ready?
+  while ( !( UCB0IFG & UCTXIFG ) );	// USCI_B0 TX buffer ready?
                                   // send address byte
   UCB0TXBUF = address | BURST_BIT | RW_BIT;
   while ( UCB0STAT & UCBUSY );    // wait for TX to complete
   UCB0TXBUF = 0;                  // dummy write
 
-  IFG2 &= ~UCB0RXIFG;            // clear rx flag
+  UCB0IFG &= ~UCRXIFG;            // clear rx flag
                                   // wait for end of first tx byte
-  while ( !( IFG2 & UCB0RXIFG ) );
+  while ( !( UCB0IFG & UCRXIFG ) );
   for( index = 0; index < (size-1); index++ )
   {
     UCB0TXBUF = 0;                // dummy write
     buffer[index] = UCB0RXBUF;    // store data byte in buffer
                                   // wait for RX to finish  
-    while ( !( IFG2 & UCB0RXIFG ) );
+    while ( !( UCB0IFG & UCRXIFG ) );
   }
   buffer[index] = UCB0RXBUF;    // store last data byte
   
-  P3OUT |= BIT0;                  // CSn disable
+  P1OUT |= BIT7;                  // CSn disable
 }
 
 //
@@ -203,14 +203,14 @@ uint8_t read_status( uint8_t address )
 {
   uint8_t status;
   
-  P3OUT &= ~BIT0;                 // CSn enable  
-  while ( !( IFG2&UCB0TXIFG ) );	// USCI_B0 TX buffer ready?
+  P1OUT &= ~BIT7;                 // CSn enable  
+  while ( !( UCB0IFG & UCTXIFG ) );	// USCI_B0 TX buffer ready?
   UCB0TXBUF = address | BURST_BIT | RW_BIT;
-  while ( !( IFG2&UCB0TXIFG ) );	// USCI_B0 TX buffer ready?
+  while ( !( UCB0IFG & UCTXIFG ) );	// USCI_B0 TX buffer ready?
   UCB0TXBUF = 0;                  // dummy write
   while ( UCB0STAT & UCBUSY );    // wait for TX to complete
   status = UCB0RXBUF;             // read status byte
-  P3OUT |= BIT0;                  // CSn disable
+  P1OUT |= BIT7;                  // CSn disable
   
   return status;  
 }
@@ -221,11 +221,11 @@ uint8_t read_status( uint8_t address )
 //
 uint8_t strobe ( uint8_t strobe_byte )
 {  
-  P3OUT &= ~BIT0;                 // CSn enable  
-  while ( !( IFG2&UCB0TXIFG ) );	// USCI_B0 TX buffer ready?
+  P1OUT &= ~BIT7;                 // CSn enable  
+  while ( !( UCB0IFG & UCTXIFG ) );	// USCI_B0 TX buffer ready?
   UCB0TXBUF = strobe_byte;        // send strobe
   while ( UCB0STAT & UCBUSY );    // wait for TX to complete
-  P3OUT |= BIT0;                  // CSn disable
+  P1OUT |= BIT7;                  // CSn disable
   
   return UCB0RXBUF;
 }
@@ -236,11 +236,11 @@ uint8_t strobe ( uint8_t strobe_byte )
 //
 void initialize_radio()
 {
-  P3OUT |= BIT0;                  // CSn disable
+  P1OUT |= BIT7;                  // CSn disable
   __delay_cycles(30);
-  P3OUT &= ~BIT0;                 // CSn enable
+  P1OUT &= ~BIT7;                 // CSn enable
   __delay_cycles(30);
-  P3OUT |= BIT0;                  // CSn disable
+  P1OUT |= BIT7;                  // CSn disable
   __delay_cycles(45);
 
   strobe( SRES );
@@ -253,7 +253,7 @@ void initialize_radio()
 //
 void write_rf_settings()
 {
-  write_register( &cc2500_settings.iocfg2 );    // GDO2Output Pin Configuration 
+  //write_register( &cc2500_settings.iocfg2 );    // GDO2Output Pin Configuration 
   //write_register( &cc2500_settings.iocfg1 );    // GDO1Output Pin Configuration 
   write_register( &cc2500_settings.iocfg0 );    // GDO0Output Pin Configuration 
   //write_register( &cc2500_settings.fifothr );   // RX FIFO and TX FIFO Thresholds

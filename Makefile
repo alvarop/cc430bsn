@@ -6,8 +6,8 @@
 BUILD_DIR = build
 
 CC = /opt/mspgcc-gcc-3.2.3/bin/msp430-gcc
-#CPU = cc430x6137
-CPU = msp430x2274
+CPU = cc430x6137
+#CPU = msp430x2274
 
 # Identify library/helper source files one directory deep.
 LIB_SOURCE = $(wildcard lib/*.c)
@@ -20,7 +20,7 @@ ADDRESS = 0x00
 
 CFLAGS += \
 	-mmcu=$(CPU) -O1 -mno-stack-init -mendup-at=main -Wall -g \
-	-D"__MSP430F2274__" \
+	-D"__CC430F6137__" \
 	-DMHZ_915_CUSTOM \
 	-DDEVICE_ADDRESS=$(ADDRESS) \
 	-I"." \
