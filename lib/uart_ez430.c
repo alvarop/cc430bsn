@@ -7,6 +7,7 @@
 #include "uart.h"
 #include "leds.h"
 
+
 /*******************************************************************************
  * @fn     void setup_uart( void )
  * @brief  configure uart for 115200BAUD on ports 1.6 and 1.7
@@ -48,8 +49,8 @@ void setup_uart( void )
 
 void setup_spi()
 {  
-  P3OUT |= BIT0;  // CSn output
-  P3DIR |= BIT0;  // Disable CSn  
+  CSn_PxOUT |= CSn_PIN;  // CSn output
+  CSn_PxDIR |= CSn_PIN;  // Disable CSn  
 
   UCB0CTL1 = UCSWRST;                   // Put state machine in reset state
   UCB0CTL0 = UCMST + UCCKPH + UCSYNC + UCMSB; // Master,3-pin,MSB first, sync
@@ -65,10 +66,11 @@ void setup_spi()
   //
   // Configure GDO0 input
   //
-  P2IES |= BIT6;            // Edge select (high-to-low)
-  P2IFG &= ~BIT6;           // Clear any pending interrupts
-  P2IE |= BIT6;             // Enable interrupts
-
+  GDO0_PxIES |= GDO0_PIN;            // Edge select (high-to-low)
+  GDO0_PxIFG &= ~GDO0_PIN;           // Clear any pending interrupts
+  GDO0_PxIE |= GDO0_PIN;             // Enable interrupts
+  
+  GDO0_PxSEL &= ~GDO0_PIN;
 }
 
 /*******************************************************************************
@@ -131,7 +133,7 @@ void spi_put_char( uint8_t character )
 
   // Enable CSn
   
-  P3OUT |= BIT0;
+  CSn_PxOUT |= CSn_PIN;
   
   // Enable TX interrupts on SPI
   IE2 |= UCB0TXIE;
@@ -159,6 +161,9 @@ uint8_t hex_to_string( uint8_t* buffer_out, uint8_t* buffer_in,
     buffer_out[counter] = hex_char[(buffer_in[(counter>>1)] & 0xF)];
     counter++;
   }
+  
+  // Terminate string with null character
+  buffer_out[counter++] = 0;
   
   return counter;
 }
@@ -196,7 +201,7 @@ wakeup interrupt ( USCIAB0TX_VECTOR ) uart_tx_isr(void) // CHANGE
   if ( IFG2 & UCB0TXIFG )
   {
       // Check if this is a burst transfer, otherwise, pull CSn high
-      P3OUT &= ~BIT0;
+      CSn_PxOUT &= ~CSn_PIN;
       
       // Disable TX interrupts on SPI
       IE2 &= ~UCB0TXIE;

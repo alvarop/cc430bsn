@@ -32,13 +32,13 @@ uint8_t buffer[10];
 // CRC autoflush = false 
 // TX power = 0 dBm
 cc2500_settings_t cc2500_settings = {
-  0x0B,  // IOCFG2              GDO2Output Pin Configuration 
+  0x30,  // IOCFG2              GDO2Output Pin Configuration 
   0x2E,  // IOCFG1              GDO1Output Pin Configuration 
   0x06,  // IOCFG0              GDO0Output Pin Configuration 
   0x07,  // FIFOTHR             RX FIFO and TX FIFO Thresholds
   0xD3,  // SYNC1               Sync Word, High Byte 
   0x91,  // SYNC0               Sync Word, Low Byte 
-  0xFF,  // PKTLEN              Packet Length 
+  0x3E,  // PKTLEN              Packet Length 
   0x04,  // PKTCTRL1            Packet Automation Control
   0x05,  // PKTCTRL0            Packet Automation Control
   0xcc,  // ADDR                Device Address 

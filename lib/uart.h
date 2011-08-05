@@ -10,6 +10,20 @@
 #include "common.h"
 #include <signal.h>
 
+#define GDO0_PxOUT      P2OUT
+#define GDO0_PxIN       P2IN
+#define GDO0_PxSEL      P2SEL
+#define GDO0_PxDIR      P2DIR
+#define GDO0_PxIE       P2IE
+#define GDO0_PxIES      P2IES
+#define GDO0_PxIFG      P2IFG
+#define GDO0_PIN        BIT6
+
+#define CSn_PxOUT       P3OUT
+#define CSn_PxDIR       P3DIR
+#define CSn_PIN         BIT0
+
+
 void setup_uart( void );
 
 void uart_put_char( uint8_t );

@@ -9,13 +9,11 @@
 #define _RADIO_CC2500_H
 
 #include "common.h"
-#include "RF1A.h"
-#include "hal_pmm.h"
 
 #define CC2500_BUFFER_SIZE 255
 
-void setup_radio( uint8_t (*)(uint8_t*, uint8_t) );
-void radio_tx( uint8_t*, uint8_t );
+void setup_cc2500( uint8_t (*)(uint8_t*, uint8_t) );
+void cc2500_tx( uint8_t*, uint8_t );
 
 
 #endif /* _RADIO_CC2500_H */\
