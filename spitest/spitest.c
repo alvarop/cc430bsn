@@ -98,7 +98,7 @@ int main( void )
   radio_debug( "Setup SPI\r\n");
   setup_spi();
  
-  //P3SEL = 0;
+  P1SEL &= ~BIT0;
   
   radio_debug( "Initialize cc2500\r\n");
   initialize_radio();       // Reset radio
@@ -150,7 +150,7 @@ int main( void )
     radio_debug( message );
     radio_debug("\r\n");
     
-    led2_toggle();
+    //led2_toggle();
       
     __delay_cycles(40000);     // 
     __delay_cycles(40000);     // 
@@ -237,7 +237,7 @@ uint8_t hex_to_string( uint8_t* buffer_out, uint8_t* buffer_in,
  * ****************************************************************************/
 void send_packet( uint8_t* p_buffer, uint8_t size )
 {
-   
+  led1_toggle(); 
   write_burst_register( FIFO, p_buffer, size );
   
   //radio_debug("Wrote data to buffer\r\n");

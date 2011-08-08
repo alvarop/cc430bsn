@@ -38,8 +38,8 @@ void setup_spi()
 {
   PMAPPWD = 0x02D52;                        // Get write-access to port mapping regs 
   P1MAP2 = PM_UCB0SOMI;                     // Map UCB0SOMI output to P1.2
-  P1MAP3 = PM_UCB0SIMO;                     // Map UCB0SIMO output to P1.6
-  P1MAP4 = PM_UCB0CLK;                      // Map UCB0CLK output to P1.6
+  P1MAP3 = PM_UCB0SIMO;                     // Map UCB0SIMO output to P1.3
+  P1MAP4 = PM_UCB0CLK;                      // Map UCB0CLK output to P1.4
   PMAPPWD = 0;                              // Lock port mapping registers
   
   P1OUT |= BIT7;  // CSn output
