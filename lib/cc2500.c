@@ -38,8 +38,8 @@ cc2500_settings_t cc2500_settings = {
   0x07,  // FIFOTHR             RX FIFO and TX FIFO Thresholds
   0xD3,  // SYNC1               Sync Word, High Byte 
   0x91,  // SYNC0               Sync Word, Low Byte 
-  0x3E,  // PKTLEN              Packet Length 
-  0x04,  // PKTCTRL1            Packet Automation Control
+  0x3D,  // PKTLEN              Packet Length 
+  0x0C,  // PKTCTRL1            Packet Automation Control
   0x05,  // PKTCTRL0            Packet Automation Control
   0xcc,  // ADDR                Device Address 
   0xFF,  // CHANNR              Channel Number 
@@ -50,12 +50,12 @@ cc2500_settings_t cc2500_settings = {
   0xC4,  // FREQ0               Frequency Control Word, Low Byte 
   0x2D,  // MDMCFG4             Modem Configuration 
   0x3B,  // MDMCFG3             Modem Configuration 
-  0xF3,  // MDMCFG2             Modem Configuration
-  0x00,  // MDMCFG1             Modem Configuration
+  0x73,  // MDMCFG2             Modem Configuration
+  0x22,  // MDMCFG1             Modem Configuration
   0xF8,  // MDMCFG0             Modem Configuration 
   0x00,  // DEVIATN             Modem Deviation Setting 
   0x07,  // MCSM2               Main Radio Control State Machine Configuration 
-  0x30,  // MCSM1               Main Radio Control State Machine Configuration
+  0x3F,  // MCSM1               Main Radio Control State Machine Configuration
   0x18,  // MCSM0               Main Radio Control State Machine Configuration 
   0x1D,  // FOCCFG              Frequency Offset Compensation Configuration
   0x1C,  // BSCFG               Bit Synchronization Configuration
@@ -275,7 +275,7 @@ void write_rf_settings()
   write_register( &cc2500_settings.mdmcfg1 );   // Modem Configuration
   write_register( &cc2500_settings.mdmcfg0 );   // Modem Configuration 
   write_register( &cc2500_settings.deviatn );   // Modem Deviation Setting 
-  write_register( &cc2500_settings.mcsm2 );     // Main Radio Control State Machine Configuration 
+ // write_register( &cc2500_settings.mcsm2 );     // Main Radio Control State Machine Configuration 
   write_register( &cc2500_settings.mcsm1 );     // Main Radio Control State Machine Configuration
   write_register( &cc2500_settings.mcsm0 );     // Main Radio Control State Machine Configuration 
   write_register( &cc2500_settings.foccfg );    // Frequency Offset Compensation Configuration

@@ -14,14 +14,14 @@
 
 #include <string.h>
 
-#define debug(x) uart_write( x, strlen(x) )
-
-uint8_t string[10];
+uint8_t string[100];
 uint8_t p_rx_buffer[10];
 uint8_t registers[20];
-uint8_t message[15];
+uint8_t message[64];
 uint8_t reg;
 extern cc2500_settings_t cc2500_settings;
+
+volatile uint8_t send_reply;
 
 void send_packet( uint8_t*, uint8_t );
 void debug_status();
@@ -34,26 +34,37 @@ void debug_fifo();
 static uint8_t rx_callback( uint8_t* p_buffer, uint8_t size )
 {
   led2_toggle();
-  debug("rx: ");
+  debug("rx:");
   
   // Setup as string
   p_buffer[size] = 0;
-  debug(p_buffer);
+  //debug(p_buffer);
   
-  debug("\r\n");  
+  //memcpy(message, p_buffer, size);
+  
+  //debug("\r\n");
+  hex_to_string( string, p_buffer, size);
+  debug("0x");
+  debug( string );
+  debug("\r\n");
+  
+  send_reply = 1;
 
   return 0;
 }
 
 int main( void )
 {
+
+  uint8_t counter;
   
-  message[0]=5;
-  message[1]='b';
-  message[2]='c';
-  message[3]='d';
-  message[4]='e';
-  message[5]='f';   
+  message[0]=10;
+  for ( counter = 0; counter < 10; counter++ )
+  {
+    message[counter+1] = 0xaa;
+  }
+  
+  send_reply = 0;
   
   /* Init watchdog timer to off */
   WDTCTL = WDTPW|WDTHOLD;
@@ -86,22 +97,26 @@ int main( void )
   debug_status();            
   for (;;) 
   {        
-    __bis_SR_register( /*LPM3_bits*/ + GIE );   // Sleep
-    debug_status();
-    debug_fifo();
-    __delay_cycles(0x40000);
-    __delay_cycles(0x40000);
-    __delay_cycles(0x40000);
-    __delay_cycles(0x40000);
-    debug_status();
-    debug_fifo();
+    __bis_SR_register( LPM0_bits + GIE );   // Sleep
+//    debug_status();
+//    debug_fifo();
+    //__delay_cycles(0x40000);
+
     
     // transmit packet
-    led1_toggle();
-    cc2500_tx( message, 6 );
-
-    debug_status();
-    debug_fifo();
+    //led1_toggle();
+    //debug("TX\r\n");
+    //cc2500_tx( message, 11 );
+    //debug_status();
+    //debug_fifo();
+    if ( send_reply )
+    {
+      send_reply = 0;
+      //__delay_cycles(0x4);
+      //debug_status();
+      cc2500_tx( message, message[0] + 1 );
+      led1_toggle();
+    }
   } 
   
   return 0;
@@ -149,15 +164,14 @@ void debug_status()
 void debug_fifo()
 {
   uint8_t radio_status;
-  uint8_t* string[10];
   
-  debug( "RX_BYTES: " );
+  debug( "rx: " );
   radio_status = read_status( RXBYTES ) ;
   hex_to_string( string, &radio_status, 1);
   debug( string );
-  debug("\r\n");
+  debug(" - ");
 
-  debug( "TX_BYTES: " );
+  debug( "tx: " );
   radio_status = read_status( TXBYTES ) ;
   hex_to_string( string, &radio_status, 1);
   debug( string );
@@ -174,9 +188,9 @@ wakeup interrupt ( PORT1_VECTOR ) port1_isr(void) // CHANGE
   if ( P1IFG & BIT2 )
   {        
       led1_toggle();         
-      cc2500_tx( message, 6 );
+      cc2500_tx( message, message[0] + 1 );
       
-      __delay_cycles(40000);     // Debounce
+      __delay_cycles(0x40000);     // Debounce
                  
   }
   
