@@ -8,29 +8,23 @@
 #include "intrinsics.h"
 #include "uart.h"
 
-
-uint8_t buffer[10];
-
 // Phase transition time = 0 
-// Base frequency = 2432.499634 
-// Carrier frequency = 2445.246521 
+// Base frequency = 2432.499634 *
+// Carrier frequency = 2445.246521 *
 // Channel number = 255 
-// Carrier frequency = 2445.246521 
+// Carrier frequency = 2445.246521 *
 // Modulated = true 
 // Modulation format = MSK 
 // Manchester enable = false 
 // Sync word qualifier mode = 30/32 sync word bits detected 
 // Preamble count = 2 
-// Channel spacing = 49.987793 
-// Carrier frequency = 2445.246521 
-// Data rate = 249.939 
-// RX filter BW = 541.666667 
+// Channel spacing = 49.987793 *
+// Carrier frequency = 2445.246521 *
+// Data rate = 249.939 *
+// RX filter BW = 541.666667 *
 // Data format = Normal mode 
 // CRC enable = true 
-// Device address = 0 
-// Address config = No address check 
-// CRC autoflush = false 
-// TX power = 0 dBm
+// * These auto-generated comments are not currently accurate
 cc2500_settings_t cc2500_settings = {
   0x30,  // IOCFG2              GDO2Output Pin Configuration 
   0x2E,  // IOCFG1              GDO1Output Pin Configuration 
@@ -41,13 +35,13 @@ cc2500_settings_t cc2500_settings = {
   0x3D,  // PKTLEN              Packet Length 
   0x0C,  // PKTCTRL1            Packet Automation Control
   0x05,  // PKTCTRL0            Packet Automation Control
-  0xcc,  // ADDR                Device Address 
-  0xFF,  // CHANNR              Channel Number 
-  0x12,  // FSCTRL1             Frequency Synthesizer Control 
+  0x01,  // ADDR                Device Address 
+  0x00,  // CHANNR              Channel Number 
+  0x07,  // FSCTRL1             Frequency Synthesizer Control 
   0x00,  // FSCTRL0             Frequency Synthesizer Control 
   0x5D,  // FREQ2               Frequency Control Word, High Byte 
-  0x8E,  // FREQ1               Frequency Control Word, Middle Byte 
-  0xC4,  // FREQ0               Frequency Control Word, Low Byte 
+  0x93,  // FREQ1               Frequency Control Word, Middle Byte 
+  0xB1,  // FREQ0               Frequency Control Word, Low Byte 
   0x2D,  // MDMCFG4             Modem Configuration 
   0x3B,  // MDMCFG3             Modem Configuration 
   0x73,  // MDMCFG2             Modem Configuration
@@ -61,7 +55,7 @@ cc2500_settings_t cc2500_settings = {
   0x1C,  // BSCFG               Bit Synchronization Configuration
   0xC7,  // AGCCTRL2            AGC Control
   0x00,  // AGCCTRL1            AGC Control
-  0xB0,  // AGCCTRL0            AGC Control
+  0xB2,  // AGCCTRL0            AGC Control
   0x87,  // WOREVT1             High Byte Event0 Timeout 
   0x6B,  // WOREVT0             Low Byte Event0 Timeout 
   0xF8,  // WORCTRL             Wake On Radio Control
@@ -94,8 +88,7 @@ void write_register ( uint8_t* p_setting )
   
   //
   // Write byte with address and write bit
-  //
-         
+  //         
   P3OUT &= ~BIT0;                 // CSn enable
     
   while ( !( IFG2&UCB0TXIFG ) );	// USCI_B0 TX buffer ready?

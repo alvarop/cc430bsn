@@ -10,10 +10,11 @@
 
 #include "common.h"
 
-#define CC2500_BUFFER_SIZE 255
+#define CC2500_BUFFER_LENGTH 255
 
 void setup_cc2500( uint8_t (*)(uint8_t*, uint8_t) );
 void cc2500_tx( uint8_t*, uint8_t );
+void cc2500_tx_packet( uint8_t*, uint8_t, uint8_t );
 
 void cc2500_set_address( uint8_t );
 void cc2500_set_channel( uint8_t );

@@ -15,7 +15,7 @@
 #include <string.h>
 
 uint8_t string[100];
-uint8_t p_rx_buffer[10];
+uint8_t p_tx_buffer[10];
 uint8_t registers[20];
 uint8_t message[64];
 uint8_t reg;
@@ -34,20 +34,15 @@ void debug_fifo();
 static uint8_t rx_callback( uint8_t* p_buffer, uint8_t size )
 {
   led2_toggle();
-  debug("rx:");
   
-  // Setup as string
-  p_buffer[size] = 0;
-  //debug(p_buffer);
-  
-  //memcpy(message, p_buffer, size);
-  
-  //debug("\r\n");
+  // DEBUG, print received message in HEX
+  debug("rx:  ");
   hex_to_string( string, p_buffer, size);
   debug("0x");
   debug( string );
   debug("\r\n");
   
+  // Message received flag
   send_reply = 1;
 
   return 0;
@@ -56,19 +51,19 @@ static uint8_t rx_callback( uint8_t* p_buffer, uint8_t size )
 int main( void )
 {
 
-  uint8_t counter;
-  
-  message[0]=10;
-  for ( counter = 0; counter < 10; counter++ )
-  {
-    message[counter+1] = 0xaa;
-  }
-  
-  send_reply = 0;
+  uint8_t counter;    
   
   /* Init watchdog timer to off */
   WDTCTL = WDTPW|WDTHOLD;
   
+  // Initialize test message with ones
+  for ( counter = 0; counter < 10; counter++ )
+  {
+    message[counter] = 1;
+  }
+  
+  send_reply = 0;
+    
   // Setup oscillator for 12MHz operation
   BCSCTL1 = CALBC1_12MHZ;
   DCOCTL = CALDCO_12MHZ; 
@@ -97,24 +92,15 @@ int main( void )
   debug_status();            
   for (;;) 
   {        
-    __bis_SR_register( LPM0_bits + GIE );   // Sleep
-//    debug_status();
-//    debug_fifo();
-    //__delay_cycles(0x40000);
+    __bis_SR_register( /*LPM0_bits +*/ GIE );   // Sleep
 
-    
-    // transmit packet
-    //led1_toggle();
-    //debug("TX\r\n");
-    //cc2500_tx( message, 11 );
-    //debug_status();
-    //debug_fifo();
     if ( send_reply )
     {
       send_reply = 0;
-      //__delay_cycles(0x4);
-      //debug_status();
-      cc2500_tx( message, message[0] + 1 );
+      
+      // Don't reply while debugging
+      //p_tx_buffer[0] = 0xac;
+      //cc2500_tx_packet(p_tx_buffer,1, 0);
       led1_toggle();
     }
   } 
@@ -122,6 +108,31 @@ int main( void )
   return 0;
 }
 
+/*******************************************************************************
+ * @fn     void port1_isr( void )
+ * @brief  Pushbutton Interrupt (PORT 1)
+ * ****************************************************************************/
+wakeup interrupt ( PORT1_VECTOR ) port1_isr(void) // CHANGE
+{
+  //
+  // If the button is pressed, toggle the LED and transmit message
+  //
+  if ( P1IFG & BIT2 )
+  {        
+      led1_toggle();         
+      cc2500_tx_packet( message, 10, 0 );       
+      
+      __delay_cycles(0x40000);     // Debounce
+                 
+  }
+  
+  P1IFG &= ~BIT2;           // Clear flag
+
+}
+
+//
+// Temporary debug function that displays current radio status
+//
 void debug_status()
 {
     uint8_t radio_status = strobe(SNOP);
@@ -161,6 +172,9 @@ void debug_status()
 
 }
 
+//
+// Temporary function to display RX and TX fifo buffer statuses
+//
 void debug_fifo()
 {
   uint8_t radio_status;
@@ -177,26 +191,4 @@ void debug_fifo()
   debug( string );
   debug("\r\n");
 }
-
-/*******************************************************************************
- * @fn     void port1_isr( void )
- * @brief  UART ISR
- * ****************************************************************************/
-wakeup interrupt ( PORT1_VECTOR ) port1_isr(void) // CHANGE
-{
-  
-  if ( P1IFG & BIT2 )
-  {        
-      led1_toggle();         
-      cc2500_tx( message, message[0] + 1 );
-      
-      __delay_cycles(0x40000);     // Debounce
-                 
-  }
-  
-  P1IFG &= ~BIT2;           // Clear flag
-
-}
-
-
 

@@ -9,100 +9,34 @@
 #include "uart.h"
 #include "intrinsics.h"
 #include <signal.h>
+#include <string.h>
+
+// Define positions in buffer for various fields
+#define LENGTH_FIELD  (0)
+#define ADDRESS_FIELD (1)
+#define DATA_FIELD    (2)
 
 static uint8_t dummy_callback( uint8_t*, uint8_t );
 uint8_t receive_packet( uint8_t*, uint8_t* );
 
-// Receive buffer
-static uint8_t p_rx_buffer[CC2500_BUFFER_SIZE];
-
 extern cc2500_settings_t cc2500_settings;
+
+// Receive buffer
+static uint8_t p_rx_buffer[CC2500_BUFFER_LENGTH];
+static uint8_t p_tx_buffer[CC2500_BUFFER_LENGTH];
 
 // Holds pointers to all callback functions for CCR registers (and overflow)
 static uint8_t (*rx_callback)( uint8_t*, uint8_t ) = dummy_callback;
 
-void debug_marcstate()
-{
-    uint8_t radio_status = read_status( MARCSTATE );
-    
-    debug(">");
-    
-    switch ( radio_status & 0x0f )
-    {
-      case 0x00:
-        debug("SLEEP");
-        break;
-      case 0x01:
-        debug("IDLE");
-        break;
-      case 0x02:
-        debug("XOFF");
-        break;
-      case 0x03:
-        debug("VCOON_MC");
-        break;
-      case 0x04:
-        debug("REGON_MC");
-        break;
-      case 0x05:
-        debug("MANCAL");
-        break;
-      case 0x06:
-        debug("VCOON");
-        break;
-      case 0x07:
-        debug("REGON");
-        break;
-      case 0x08:
-        debug("STARTCAL");
-        break;
-      case 0x09:
-        debug("BWBOOST");
-        break;
-      case 0x0A:
-        debug("FS_LOCK");
-        break;
-      case 0x0B:
-        debug("IFADCON");
-        break;
-      case 0x0C:
-        debug("ENDCAL");
-        break;
-      case 0x0D:
-        debug("RX");
-        break;
-      case 0x0E:
-        debug("RX_END");
-        break;
-      case 0x0F:
-        debug("RX_RST");
-        break;
-      case 0x10:
-        debug("TXRX_SWITCH");
-        break;
-      case 0x11:
-        debug("RXFIFO_OVERFLOW");
-        break;
-      case 0x12:
-        debug("FSTXON");
-        break;
-      case 0x13:
-        debug("TX");
-        break;
-      case 0x14:
-        debug("TX_END");
-        break;
-      case 0x15:
-        debug("RXTX_SWITCH");
-        break;
-      case 0x16:
-        debug("TXFIFO_UNDERFLOW");
-        break;
-    }
-  
-    debug("\r\n");
-
-}
+//
+// Optimum PATABLE levels according to Table 31 on CC2500 datasheet
+//
+static uint8_t power_table[] = { 
+                              0x00, 0x50, 0x44, 0xC0, // -55, -30, -28, -26 dBm
+                              0x84, 0x81, 0x46, 0x93, // -24, -22, -20, -18 dBm
+                              0x55, 0x8D, 0xC6, 0x97, // -16, -14, -12, -10 dBm
+                              0x6E, 0x7F, 0xA9, 0xBB, // -8,  -6,  -4,  -2  dBm
+                              0xFE, 0xFF };           //  0,   1            dBm 
 
 /*******************************************************************************
  * @fn     void setup_radio( uint8_t (*callback)(void) )
@@ -110,12 +44,12 @@ void debug_marcstate()
  * ****************************************************************************/
 void setup_cc2500( uint8_t (*callback)(uint8_t*, uint8_t) )
 {
-  uint8_t tx_power = 0xFB; // Maximum power
+  uint8_t tx_power = 0xFB;  // Maximum power
 
   // Set-up rx_callback function
   rx_callback = callback;
   
- initialize_radio();       // Reset radio
+ initialize_radio();        // Reset radio
   
   __delay_cycles(100);      // Let radio settle (Won't configure unless you do?)
 
@@ -127,29 +61,51 @@ void setup_cc2500( uint8_t (*callback)(uint8_t*, uint8_t) )
 }
 
 /*******************************************************************************
- * @fn     void radio_tx( uint8_t* buffer, uint8_t size )
- * @brief  Send message through radio
+ * @fn     cc2500_tx( uint8_t* p_buffer, uint8_t length )
+ * @brief  Send raw message through radio
  * ****************************************************************************/
-void cc2500_tx( uint8_t* p_buffer, uint8_t size )
+void cc2500_tx( uint8_t* p_buffer, uint8_t length )
 {
-  GDO0_PxIE &= ~GDO0_PIN;           // Disable interrupt
+  GDO0_PxIE &= ~GDO0_PIN;          // Disable interrupt
   
-  write_burst_register( FIFO, p_buffer, size );
+  write_burst_register( FIFO, p_buffer, length );
   
-  strobe( STX );              // Change to TX mode, start data transfer
+  strobe( STX );                   // Change to TX mode, start data transfer
   
-  while ( !( GDO0_PxIN & GDO0_PIN ) );  // Wait until GDO0 goes high (sync word txed)
-  debug_marcstate();
+                                   // Wait until GDO0 goes high (sync word txed) 
+  while ( !( GDO0_PxIN & GDO0_PIN ) );
+
   // Transmitting
 
-  while ( GDO0_PxIN & GDO0_PIN );       // Wait until GDO0 goes low (end of packet)
-  debug_marcstate();
+  while ( GDO0_PxIN & GDO0_PIN );   // Wait until GDO0 goes low (end of packet)
+
   // Only needed if radio is configured to return to IDLE after transmission
   // Check register MCSM1.TXOFF_MODE
   //strobe( SRX ); 
   
-  GDO0_PxIFG &= ~GDO0_PIN;              // Clear flag
-  GDO0_PxIE |= GDO0_PIN;                // Enable interrupt  
+  GDO0_PxIFG &= ~GDO0_PIN;          // Clear flag
+  GDO0_PxIE |= GDO0_PIN;            // Enable interrupt  
+}
+
+/*******************************************************************************
+ * @fn     void cc2500_tx_packet( uint8_t* p_buffer, uint8_t length, 
+ *                                                        uint8_t destination )
+ * @brief  Send packet through radio. Takes care of adding length and 
+ *         destination to packet.
+ * ****************************************************************************/
+void cc2500_tx_packet( uint8_t* p_buffer, uint8_t length, uint8_t destination )
+{
+  // Add one to packet length account for address byte
+  p_tx_buffer[LENGTH_FIELD] = length + 1;
+  
+  // Insert destination address to buffer
+  p_tx_buffer[ADDRESS_FIELD] = destination;
+  
+  // Copy message buffer into tx buffer. Add one to account for length byte
+  memcpy( &p_tx_buffer[DATA_FIELD], p_buffer, length );
+  
+  // Add DATA_FIELD to account for packet length and address bytes
+  cc2500_tx( p_tx_buffer, (length + DATA_FIELD) );
 }
 
 /*******************************************************************************
@@ -178,15 +134,21 @@ void cc2500_set_channel( uint8_t channel )
  * ****************************************************************************/
 void cc2500_set_power( uint8_t power )
 {
-  //TODO use linear lookup table instead of raw values
-  write_burst_register(PATABLE, &power, 1 ); // Set TX power
+  // Make sure not to read values outside the power table
+  if ( power > sizeof(power_table) )
+  {
+    power = sizeof(power_table) - 1;
+  }
+  
+  // Set TX power
+  write_burst_register(PATABLE, &power_table[power], 1 ); 
 }
 
 /*******************************************************************************
  * @fn     void dummy_callback( void )
  * @brief  empty function works as default callback
  * ****************************************************************************/
-static uint8_t dummy_callback( uint8_t* buffer, uint8_t size )
+static uint8_t dummy_callback( uint8_t* buffer, uint8_t length )
 {
   __no_operation();
 
@@ -194,10 +156,10 @@ static uint8_t dummy_callback( uint8_t* buffer, uint8_t size )
 }
 
 /*******************************************************************************
- * @fn     uint8_t receive_packet( uint8_t* p_buffer, uint8_t* size )
+ * @fn     uint8_t receive_packet( uint8_t* p_buffer, uint8_t* length )
  * @brief  Receive packet from the radio using CC2500
  * ****************************************************************************/
-uint8_t receive_packet( uint8_t* p_buffer, uint8_t* size )
+uint8_t receive_packet( uint8_t* p_buffer, uint8_t* length )
 {
   uint8_t status[2];
   uint8_t packet_length;
@@ -205,20 +167,40 @@ uint8_t receive_packet( uint8_t* p_buffer, uint8_t* size )
   // Make sure there are bytes to be read in the FIFO buffer
   if ( (read_status( RXBYTES ) & NUM_RXBYTES ) )
   {
-    
+    // Read the first byte which contains the packet length
     read_burst_register( FIFO, &packet_length, 1 );
 
-    if ( packet_length <= *size )
+    // Make sure the packet length is smaller than our buffer
+    if ( packet_length <= *length )
     {
+      // Read the rest of the packet
       read_burst_register( FIFO, p_buffer, packet_length );
-      *size = packet_length;
+      
+      // Return packet size in length variable
+      *length = packet_length;
+      
+      // Read two byte status 
       read_burst_register( FIFO, status, 2 );
       
+      // DEBUG
+      debug("st: 0x");  
+      hex_to_string( p_tx_buffer, status, 2);
+      debug(p_tx_buffer);
+      debug("\r\n");
+      
+      // DEBUG
+      debug("raw: 0x");  
+      hex_to_string( p_tx_buffer, p_buffer, packet_length);
+      debug(p_tx_buffer);
+      debug("\r\n");                
+      
+      // Return 1 when CRC_OK, 0 otherwise
       return ( status[LQI_POS] & CRC_OK );
-    }
+    }    
     else
     {
-      *size = packet_length;
+      // If the packet is larger than the buffer, flush the RX FIFO
+      *length = packet_length;
       
       // Flush RX FIFO
       strobe( SFRX );
@@ -227,6 +209,8 @@ uint8_t receive_packet( uint8_t* p_buffer, uint8_t* size )
     }
     
   }
+  
+  debug("!");
  
   return 0;  
 }
@@ -237,14 +221,14 @@ uint8_t receive_packet( uint8_t* p_buffer, uint8_t* size )
  * ****************************************************************************/
 wakeup interrupt ( PORT2_VECTOR ) port2_isr(void) // CHANGE
 {
-  uint8_t length = CC2500_BUFFER_SIZE; 
+  uint8_t length = CC2500_BUFFER_LENGTH; 
   
   // Check
   if ( GDO0_PxIFG & GDO0_PIN )
   {
       if( receive_packet( p_rx_buffer, &length ) )
       {
-        uart_write("CRC OK - ", 9);
+        //uart_write("CRC OK - ", 9);
         rx_callback( p_rx_buffer, length );
         
       }
