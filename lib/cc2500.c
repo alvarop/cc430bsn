@@ -115,20 +115,25 @@ void write_burst_register( uint8_t address, uint8_t* buffer, uint8_t size )
 {
   uint16_t index;
   
-  P3OUT &= ~BIT0;                 // CSn enable
+  P3OUT &= ~BIT0;                   // CSn enable
   
-  while ( !( IFG2&UCB0TXIFG ) );	// USCI_B0 TX buffer ready?
-  UCB0TXBUF = address | BURST_BIT;// send address byte
+  while ( !( IFG2&UCB0TXIFG ) );	  // USCI_B0 TX buffer ready?
+  UCB0TXBUF = address | BURST_BIT;  // send address byte
   
   for( index = 0; index < size; index++ )
   {
     while ( !( IFG2 & UCB0TXIFG ) );// USCI_B0 TX buffer ready?
     UCB0TXBUF = buffer[index];
+    
+    __no_operation();               // This NOP fixes an intermittent problem
+                                    // Where the SPI clock does not stop between
+                                    // bytes. Better explanation of the problem
+                                    // Can be found here: http://e2e.ti.com/support/rf__digital_radio/etc_rf/f/228/p/127759/457310.aspx
   }
  
-  while ( UCB0STAT & UCBUSY );    // wait for TX to complete
+  while ( UCB0STAT & UCBUSY );      // wait for TX to complete
 
-  P3OUT |= BIT0;                  // CSn disable
+  P3OUT |= BIT0;                    // CSn disable
 }
 
 //
