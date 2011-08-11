@@ -182,19 +182,10 @@ uint8_t receive_packet( uint8_t* p_buffer, uint8_t* length )
       // Read two byte status 
       read_burst_register( FIFO, status, 2 );
       
-      // DEBUG
-      debug("st: 0x");  
-      hex_to_string( p_tx_buffer, status, 2);
-      debug(p_tx_buffer);
-      debug("\r\n");
+      // Append status bytes to buffer 
+      memcpy( &p_buffer[packet_length], status, 2 );
       
-      // DEBUG
-      debug("raw: 0x");  
-      hex_to_string( p_tx_buffer, p_buffer, packet_length);
-      debug(p_tx_buffer);
-      debug("\r\n");                
-      
-      // Return 1 when CRC_OK, 0 otherwise
+      // Return 1 when CRC matches, 0 otherwise
       return ( status[LQI_POS] & CRC_OK );
     }    
     else
@@ -209,8 +200,6 @@ uint8_t receive_packet( uint8_t* p_buffer, uint8_t* length )
     }
     
   }
-  
-  debug("!");
  
   return 0;  
 }
@@ -223,22 +212,25 @@ wakeup interrupt ( PORT2_VECTOR ) port2_isr(void) // CHANGE
 {
   uint8_t length = CC2500_BUFFER_LENGTH; 
   
-  // Check
+  // Check to see if this interrupt was caused by the GDO0 pin from the CC2500
   if ( GDO0_PxIFG & GDO0_PIN )
   {
       if( receive_packet( p_rx_buffer, &length ) )
       {
-        //uart_write("CRC OK - ", 9);
+        // Successful packet receive, now send data to callback function
         rx_callback( p_rx_buffer, length );
         
       }
       else
       {
-        uart_write("CRC NOK\r\n", 9);
+        // A failed receive can occur due to bad CRC or (if address checking is
+        // enabled) an address mismatch
+        
+        //uart_write("CRC NOK\r\n", 9);
       }
            
   }
-  GDO0_PxIFG &= ~GDO0_PIN;           // Clear flag 
+  GDO0_PxIFG &= ~GDO0_PIN;  // Clear interrupt flag 
   
   // Only needed if radio is configured to return to IDLE after transmission
   // Check register MCSM1.TXOFF_MODE

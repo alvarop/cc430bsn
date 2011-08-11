@@ -33,7 +33,7 @@ cc2500_settings_t cc2500_settings = {
   0xD3,  // SYNC1               Sync Word, High Byte 
   0x91,  // SYNC0               Sync Word, Low Byte 
   0x3D,  // PKTLEN              Packet Length 
-  0x0C,  // PKTCTRL1            Packet Automation Control
+  0x0E,  // PKTCTRL1            Packet Automation Control
   0x05,  // PKTCTRL0            Packet Automation Control
   0x01,  // ADDR                Device Address 
   0x00,  // CHANNR              Channel Number 
@@ -75,10 +75,13 @@ cc2500_settings_t cc2500_settings = {
   0x0B,  // TEST0               Various Test Settings 
 };
 
-//
-// @fn write_register ( uint8_t* p_setting )
-// @brief Write single register value to CC2500
-//
+
+
+
+/*******************************************************************************
+ * @fn void write_register ( uint8_t* p_setting )
+ * @brief Write single register value to CC2500
+ * ****************************************************************************/
 void write_register ( uint8_t* p_setting )
 { 
   //
@@ -107,10 +110,10 @@ void write_register ( uint8_t* p_setting )
   
 }
 
-//
-// @fn write_burst_register( uint8_t address, uint8_t* buffer, uint8_t size )
-// @brief Write multiple values to CC2500
-//
+/*******************************************************************************
+ * @fn write_burst_register( uint8_t address, uint8_t* buffer, uint8_t size )
+ * @brief Write multiple values to CC2500
+ * ****************************************************************************/
 void write_burst_register( uint8_t address, uint8_t* buffer, uint8_t size )
 {
   uint16_t index;
@@ -136,10 +139,10 @@ void write_burst_register( uint8_t address, uint8_t* buffer, uint8_t size )
   P3OUT |= BIT0;                    // CSn disable
 }
 
-//
-// @fn uint8_t read_register ( uint8_t* p_setting )
-// @brief read single register from CC2500
-//
+/*******************************************************************************
+ * @fn uint8_t read_register ( uint8_t* p_setting )
+ * @brief read single register from CC2500
+ * ****************************************************************************/
 uint8_t read_register ( uint8_t* p_setting )
 {
   uint8_t rx_char;
@@ -162,10 +165,10 @@ uint8_t read_register ( uint8_t* p_setting )
   return rx_char; 
 }
 
-//
-// @fn read_burst_register( uint8_t address, uint8_t* buffer, uint8_t size )
-// @brief read multiple registers from CC2500
-//
+/*******************************************************************************
+ * @fn read_burst_register( uint8_t address, uint8_t* buffer, uint8_t size )
+ * @brief read multiple registers from CC2500
+ * ****************************************************************************/
 void read_burst_register( uint8_t address, uint8_t* buffer, uint8_t size )
 {
   uint16_t index;
@@ -193,10 +196,10 @@ void read_burst_register( uint8_t address, uint8_t* buffer, uint8_t size )
   P3OUT |= BIT0;                  // CSn disable
 }
 
-//
-// @fn uint8_t read_status( uint8_t address )
-// @brief send status command and read returned status byte
-//
+/*******************************************************************************
+ * @fn uint8_t read_status( uint8_t address )
+ * @brief send status command and read returned status byte
+ * ****************************************************************************/
 uint8_t read_status( uint8_t address )
 {
   uint8_t status;
@@ -213,10 +216,10 @@ uint8_t read_status( uint8_t address )
   return status;  
 }
 
-//
-// @fn void strobe ( uint8_t strobe_byte )
-// @brief send strobe command
-//
+/*******************************************************************************
+ * @fn void strobe ( uint8_t strobe_byte )
+ * @brief send strobe command
+ * ****************************************************************************/
 uint8_t strobe ( uint8_t strobe_byte )
 {  
   P3OUT &= ~BIT0;                 // CSn enable  
@@ -228,10 +231,10 @@ uint8_t strobe ( uint8_t strobe_byte )
   return UCB0RXBUF;
 }
 
-//
-// @fn void initialize_radio()
-// @brief reset radio
-//
+/*******************************************************************************
+ * @fn void initialize_radio()
+ * @brief reset radio
+ * ****************************************************************************/
 void initialize_radio()
 {
   P3OUT |= BIT0;                  // CSn disable
@@ -245,10 +248,10 @@ void initialize_radio()
 }
 
 
-//
-// @fn void write_rf_settings()
-// @brief write radio settings
-//
+/*******************************************************************************
+ * @fn void write_rf_settings()
+ * @brief write radio settings
+ * ****************************************************************************/
 void write_rf_settings()
 {
   write_register( &cc2500_settings.iocfg2 );    // GDO2Output Pin Configuration 
