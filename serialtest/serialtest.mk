@@ -1,6 +1,6 @@
 SERIALTEST_OBJS += \
 	lib/leds.o \
-	lib/uart_ez430.o \
+	lib/uart.o \
 	lib/intrinsics.o \
 	serialtest/serialtest.o
 
