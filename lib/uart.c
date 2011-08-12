@@ -6,6 +6,10 @@
 */
 #include "uart.h"
 
+static uint8_t dummy_callback( uint8_t );
+
+static uint8_t (*uart_rx_callback)( uint8_t ) = dummy_callback;
+
 #if defined(__CC430F6137__)
 
 /*******************************************************************************
@@ -52,7 +56,6 @@ void uart_put_char( uint8_t character )
  * ****************************************************************************/
 void setup_uart( void )
 {
-
   //
   // NOTE on port selection. p3.0 is the a slave enable output for SPI
   // but instead of using the built in functions to use it, it will be 
@@ -115,6 +118,15 @@ void uart_put_char( uint8_t character )
 #endif
 
 /*******************************************************************************
+ * @fn     setup_uart_callback( uint8_t (*callback)(uint8_t) )
+ * @brief  Register UART Rx Callback function
+ * ****************************************************************************/
+void setup_uart_callback( uint8_t (*callback)(uint8_t) )
+{
+  uart_rx_callback = callback;
+}
+
+/*******************************************************************************
  * @fn     uart_write( uint8_t character )
  * @brief  transmit whole buffer
  * ****************************************************************************/
@@ -150,6 +162,17 @@ void uart_write_escaped( uint8_t* buffer, uint16_t length )
     }
   }
   uart_put_char( 0x7e );
+}
+
+/*******************************************************************************
+ * @fn     void dummy_callback( uint8_t rx_char )
+ * @brief  empty function works as default callback
+ * ****************************************************************************/
+static uint8_t dummy_callback( uint8_t rx_char )
+{
+  __no_operation();
+  
+  return 0;
 }
 
 
@@ -193,12 +216,17 @@ wakeup interrupt ( USCI_A0_VECTOR ) uart_isr(void) // CHANGE
  * @fn     void uart_rx_isr( void )
  * @brief  UART ISR
  * ****************************************************************************/
-wakeup interrupt ( USCIAB0RX_VECTOR ) uart_rx_isr(void) // CHANGE
+interrupt ( USCIAB0RX_VECTOR ) uart_rx_isr(void) // CHANGE
 {  
   // Process incoming byte from USART
   if( IFG2 & UCA0RXIFG )
   { 
-
+    // Call rx callback function
+    if( uart_rx_callback( UCA0RXBUF ) )
+    {
+      // If function returns something nonzero, wakeup the processor
+      __bic_SR_register_on_exit(LPM1_bits);
+    }
   }
   // Process incoming byte from SPI
   else if ( IFG2 & UCB0RXIFG )
@@ -211,7 +239,7 @@ wakeup interrupt ( USCIAB0RX_VECTOR ) uart_rx_isr(void) // CHANGE
  * @fn     void uart_tx_isr( void )
  * @brief  UART ISR
  * ****************************************************************************/
-wakeup interrupt ( USCIAB0TX_VECTOR ) uart_tx_isr(void) // CHANGE
+interrupt ( USCIAB0TX_VECTOR ) uart_tx_isr(void) // CHANGE
 {
   // Done transmitting character through SPI
   if ( IFG2 & UCB0TXIFG )

@@ -27,26 +27,25 @@ static uint8_t timer_mode;
  * ****************************************************************************/
 void setup_timer_a( uint8_t mode )
 {
-    uint8_t index;
-    timer_mode = mode;
-    
-    // Make sure all callback functions are pointing somewhere
-    for( index = 0; index <= TOTAL_CCRS; index++ )
-    {
-      ccr_callbacks[index] = dummy_callback;
-    }      		
-  	
+  uint8_t index;
+  timer_mode = mode;
+  
+  // Make sure all callback functions are pointing somewhere
+  for( index = 0; index <= TOTAL_CCRS; index++ )
+  {
+    ccr_callbacks[index] = dummy_callback;
+  }      		
+	
 #if defined(__CC430F6137__)
-    // ACLK, clear TAR
-		// ACLK used so that counter remains active in LPM
-  	TA0CTL = TASSEL__ACLK + timer_mode + TAIE + TACLR;
+  // ACLK, clear TAR
+	// ACLK used so that counter remains active in LPM
+	TA0CTL = TASSEL__ACLK + timer_mode + TAIE + TACLR;
 #elif defined(__MSP430F2274__)
-    // SMCLK/8, clear TAR
-    // SMCLK used because there is no crystal to drive ACLK in the ez430-rf2500
-    TA0CTL = TASSEL__SMCLK + timer_mode + ID_3 + TAIE + TACLR;
-    
+  // SMCLK/8, clear TAR
+  // SMCLK used because there is no crystal to drive ACLK in the ez430-rf2500
+  TA0CTL = TASSEL__SMCLK + timer_mode + ID_3 + TAIE + TACLR;    
 #endif
-  	
+	
 
 }
 
@@ -207,7 +206,15 @@ void increment_ccr( uint8_t ccr_index, uint16_t value )
  * ****************************************************************************/
 inline void clear_timer()
 {
-  TA0CTL = TASSEL__ACLK + MC_1 + TAIE + TACLR;
+#if defined(__CC430F6137__)
+  // ACLK, clear TAR
+	// ACLK used so that counter remains active in LPM
+	TA0CTL = TASSEL__ACLK + timer_mode + TAIE + TACLR;
+#elif defined(__MSP430F2274__)
+  // SMCLK/8, clear TAR
+  // SMCLK used because there is no crystal to drive ACLK in the ez430-rf2500
+  TA0CTL = TASSEL__SMCLK + timer_mode + ID_3 + TAIE + TACLR;    
+#endif
 }
 
 /*******************************************************************************

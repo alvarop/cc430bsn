@@ -208,7 +208,7 @@ uint8_t receive_packet( uint8_t* p_buffer, uint8_t* length )
  * @fn     void port2_isr( void )
  * @brief  UART ISR
  * ****************************************************************************/
-wakeup interrupt ( PORT2_VECTOR ) port2_isr(void) // CHANGE
+interrupt ( PORT2_VECTOR ) port2_isr(void) // CHANGE
 {
   uint8_t length = CC2500_BUFFER_LENGTH; 
   
@@ -218,7 +218,11 @@ wakeup interrupt ( PORT2_VECTOR ) port2_isr(void) // CHANGE
       if( receive_packet( p_rx_buffer, &length ) )
       {
         // Successful packet receive, now send data to callback function
-        rx_callback( p_rx_buffer, length );
+        if( rx_callback( p_rx_buffer, length ) )
+        {
+          // If rx_callback returns nonzero, wakeup the processor
+          __bic_SR_register_on_exit(LPM1_bits);
+        }
         
       }
       else
