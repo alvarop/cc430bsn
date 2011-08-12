@@ -29,7 +29,7 @@ int main( void )
   
   register_timer_callback( blink_led1, 1 );
 
-  set_ccr( 1, 10900);
+  //set_ccr( 1, 10900);
   
   
   eint();

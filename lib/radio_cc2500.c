@@ -31,7 +31,7 @@ static uint8_t (*rx_callback)( uint8_t*, uint8_t ) = dummy_callback;
 //
 // Optimum PATABLE levels according to Table 31 on CC2500 datasheet
 //
-static uint8_t power_table[] = { 
+static const uint8_t power_table[] = { 
                               0x00, 0x50, 0x44, 0xC0, // -55, -30, -28, -26 dBm
                               0x84, 0x81, 0x46, 0x93, // -24, -22, -20, -18 dBm
                               0x55, 0x8D, 0xC6, 0x97, // -16, -14, -12, -10 dBm
@@ -141,7 +141,7 @@ void cc2500_set_power( uint8_t power )
   }
   
   // Set TX power
-  write_burst_register(PATABLE, &power_table[power], 1 ); 
+  write_burst_register(PATABLE, (uint8_t *)&power_table[power], 1 ); 
 }
 
 /*******************************************************************************

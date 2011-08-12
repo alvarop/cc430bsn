@@ -1,6 +1,6 @@
-/** @file spitest.c
+/** @file cc2500test.c
 *
-* @brief Set up a bridge between serial port and SPI port to test radio
+* @brief Testing radio functions
 *
 * @author Alvaro Prieto
 */
