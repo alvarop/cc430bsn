@@ -224,6 +224,9 @@ interrupt ( PORT2_VECTOR ) port2_isr(void) // CHANGE
           __bic_SR_register_on_exit(LPM1_bits);
         }
         
+        // Clear the buffer
+        memset( p_rx_buffer, 0x00, sizeof(p_rx_buffer) );
+        
       }
       else
       {

@@ -41,9 +41,9 @@ void setup_timer_a( uint8_t mode )
 	// ACLK used so that counter remains active in LPM
 	TA0CTL = TASSEL__ACLK + timer_mode + TAIE + TACLR;
 #elif defined(__MSP430F2274__)
-  // SMCLK/8, clear TAR
+  // SMCLK, clear TAR
   // SMCLK used because there is no crystal to drive ACLK in the ez430-rf2500
-  TA0CTL = TASSEL__SMCLK + timer_mode + ID_3 + TAIE + TACLR;    
+  TA0CTL = TASSEL__SMCLK + timer_mode + TAIE + TACLR;    
 #endif
 	
 
@@ -211,9 +211,9 @@ inline void clear_timer()
 	// ACLK used so that counter remains active in LPM
 	TA0CTL = TASSEL__ACLK + timer_mode + TAIE + TACLR;
 #elif defined(__MSP430F2274__)
-  // SMCLK/8, clear TAR
+  // SMCLK, clear TAR
   // SMCLK used because there is no crystal to drive ACLK in the ez430-rf2500
-  TA0CTL = TASSEL__SMCLK + timer_mode + ID_3 + TAIE + TACLR;    
+  TA0CTL = TASSEL__SMCLK + timer_mode + TAIE + TACLR;    
 #endif
 }
 

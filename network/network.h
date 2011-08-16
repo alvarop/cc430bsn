@@ -41,7 +41,7 @@ typedef struct
 // The BURST flag is used to identify a multi-packet transmission
 #define FLAG_BURST ( 0x20 )
 
-#define LED_BLINK_CYCLES (25)
+#define LED_BLINK_CYCLES (11)
 
 // Since RSSI is in 2's complement form, -128 is the smallest possible value
 // 0x80 is the representation for -128. This number will be used as an RSSI when

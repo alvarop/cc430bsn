@@ -140,7 +140,7 @@ static uint8_t rx_callback( uint8_t* p_buffer, uint8_t size )
     // Delay before sending reply
     // Worked with a delay of 55, but using 100 to be safe in case the preceding
     // code becomes more efficient.
-    __delay_cycles(100);
+    __delay_cycles(10000);
        
     cc2500_tx_packet(&p_radio_tx_buffer[1], (2 + sizeof(rssi_table) ),
                                                 p_tx_packet->destination );
@@ -157,7 +157,7 @@ static uint8_t rx_callback( uint8_t* p_buffer, uint8_t size )
     counter = LED_BLINK_CYCLES;
     //led1_on();
     ack_required = 1;
-    ack_time = LED_BLINK_CYCLES - (2 * DEVICE_ADDRESS);
+    ack_time = LED_BLINK_CYCLES - (DEVICE_ADDRESS);
     
   }
   
