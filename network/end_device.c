@@ -43,13 +43,7 @@ int main( void )
   BCSCTL1 = CALBC1_12MHZ;
   DCOCTL = CALDCO_12MHZ; 
   
-  // Wait for changes to take effectif ( PACKET_SYNC == ( start_packet->type & TYPE_MASK ) )
-  {
-    // Reset timer_a
-    clear_timer();
-    counter = LED_BLINK_CYCLES;
-    led1_on();
-  }
+  // Wait for changes to take effect
   __delay_cycles(4000);
       
   setup_uart();
@@ -95,7 +89,7 @@ static uint8_t blink_led1 (void)
     uint8_t ack_packet[] = {3, 0, DEVICE_ADDRESS, PACKET_START | FLAG_ACK};
     cc2500_tx( ack_packet, 4 );
     ack_required = 0;
-    led1_off();
+    //led1_off();
   }
   
   return 0;
@@ -111,7 +105,7 @@ static uint8_t rx_callback( uint8_t* p_buffer, uint8_t size )
   
   p_rx_packet = (packet_header_t*)p_buffer;
   
-  led2_toggle();
+  //led2_toggle();
   
   // TODO Packet handling is temporary for testing purposes
   // Later implementation will use function pointers to avoid all the if-else
@@ -126,6 +120,8 @@ static uint8_t rx_callback( uint8_t* p_buffer, uint8_t size )
   if ( PACKET_POLL == ( p_rx_packet->type & TYPE_MASK ) )
   {
     packet_header_t* p_tx_packet;  
+
+    led1_on();
 
     p_tx_packet = (packet_header_t*)p_radio_tx_buffer;
     
@@ -144,8 +140,8 @@ static uint8_t rx_callback( uint8_t* p_buffer, uint8_t size )
        
     cc2500_tx_packet(&p_radio_tx_buffer[1], (2 + sizeof(rssi_table) ),
                                                 p_tx_packet->destination );
-       
-    led1_on();
+    led1_off();   
+    
   }
   
   // Not masking the packet type so that PACKET_START ACK packets don't clear
