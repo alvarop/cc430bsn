@@ -44,6 +44,9 @@ typedef struct
 // Determines the number of timer overflows required to make a 'cycle'
 #define TIMER_CYCLES (11)
 
+// Time to transmit RSSI table
+#define TIME_TX_RSSI (TIMER_CYCLES - MAX_DEVICES - 1)
+
 // Since RSSI is in 2's complement form, -128 is the smallest possible value
 // 0x80 is the representation for -128. This number will be used as an RSSI when
 // no message is received

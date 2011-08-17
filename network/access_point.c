@@ -125,7 +125,7 @@ int main( void )
             
   // Enable interrupts
   eint();
- 
+  
   for (;;) 
   {
     
@@ -158,6 +158,12 @@ static uint8_t scheduler (void)
   {
     counter = TIMER_CYCLES;
     send_sync_message = 1;
+  }
+  
+  // Send RSSI table to host
+  if( counter == TIME_TX_RSSI )
+  {
+    uart_write_escaped((uint8_t*)rssi_table, sizeof(rssi_table));
   }
   
   return 0;
@@ -220,7 +226,8 @@ static uint8_t state_process_packet(void)
                                       p_radio_rx_buffer[last_packet_size];
                                       
       // Copy RSSI table from packet to master table
-      //TODO
+      memcpy( &rssi_table[rx_packet->source], 
+              &p_radio_rx_buffer[sizeof(packet_header_t)], sizeof(rssi_table) );
       
       // Since the device replied to the poll, we can assume it is 'active'
       device_table[rx_packet->source] |= DEVICE_ACTIVE;
