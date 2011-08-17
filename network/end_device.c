@@ -19,12 +19,12 @@
 #define DEVICE_ADDRESS 0xFF
 #endif
 
-static uint8_t blink_led1 (void);
+static uint8_t scheduler (void);
 static uint8_t rx_callback( uint8_t*, uint8_t );
 
 static uint8_t p_radio_tx_buffer[RADIO_BUFFER_SIZE];
 
-static volatile uint8_t counter = LED_BLINK_CYCLES;
+static volatile uint8_t counter = TIMER_CYCLES;
 static volatile uint8_t ack_required = 0;
 static volatile uint8_t ack_time = 0;
 
@@ -52,7 +52,7 @@ int main( void )
   
   setup_timer_a(MODE_CONTINUOUS);
   
-  register_timer_callback( blink_led1, 1 );
+  register_timer_callback( scheduler, 1 );
 
   set_ccr( 1, 32768 );
   
@@ -72,24 +72,45 @@ int main( void )
 }
 
 /*******************************************************************************
- * @fn     uint8_t blink_led1( void )
- * @brief  timer_a callback function, blinks LED every LED_BLINK_CYCLES
+ * @fn     uint8_t scheduler( void )
+ * @brief  timer_a callback function, takes care of time-related functions
  * ****************************************************************************/
-static uint8_t blink_led1 (void)
+static uint8_t scheduler (void)
 {
 
   if( 0 == counter-- )
   {
     //led1_toggle();
-    counter = LED_BLINK_CYCLES;        
+    counter = TIMER_CYCLES;        
   }
   
   if( ack_required && (counter == ack_time) )
   {
-    uint8_t ack_packet[] = {3, 0, DEVICE_ADDRESS, PACKET_START | FLAG_ACK};
-    cc2500_tx( ack_packet, 4 );
+    packet_header_t* p_tx_packet;  
+
+    led1_on();
+
+    p_tx_packet = (packet_header_t*)p_radio_tx_buffer;
+    
+    // Setup ack packet
+    p_tx_packet->destination = 0x00;
+    p_tx_packet->source = DEVICE_ADDRESS;
+    p_tx_packet->type = PACKET_SYNC | FLAG_ACK;
+    
+    // Send RSSI table back to AP
+    memcpy(&p_radio_tx_buffer[sizeof(packet_header_t)], (uint8_t*)rssi_table, 
+                                                          sizeof(rssi_table));
+    // Delay before sending reply
+    // Worked with a delay of 55, but using 100 to be safe in case the preceding
+    // code becomes more efficient.
+    //__delay_cycles(10000);
+       
+    cc2500_tx_packet(&p_radio_tx_buffer[1], (2 + sizeof(rssi_table) ),
+                                                p_tx_packet->destination );
+                                                
+    led1_off();   
+    
     ack_required = 0;
-    //led1_off();
   }
   
   return 0;
@@ -111,54 +132,21 @@ static uint8_t rx_callback( uint8_t* p_buffer, uint8_t size )
   // Later implementation will use function pointers to avoid all the if-else
   // and have constant time to start processing each packet
   
-  if ( PACKET_SYNC == ( p_rx_packet->type & TYPE_MASK ) )
+  if ( PACKET_SYNC == p_rx_packet->type )
   {
     // Reset timer_a
     clear_timer();
-  }
-  
-  if ( PACKET_POLL == ( p_rx_packet->type & TYPE_MASK ) )
-  {
-    packet_header_t* p_tx_packet;  
-
-    led1_on();
-
-    p_tx_packet = (packet_header_t*)p_radio_tx_buffer;
     
-    // Setup ack packet
-    p_tx_packet->destination = p_rx_packet->source;
-    p_tx_packet->source = DEVICE_ADDRESS;
-    p_tx_packet->type = PACKET_POLL | FLAG_ACK;
-    
-    // Send RSSI table back to AP
-    memcpy(&p_radio_tx_buffer[sizeof(packet_header_t)], (uint8_t*)rssi_table, 
-                                                          sizeof(rssi_table));
-    // Delay before sending reply
-    // Worked with a delay of 55, but using 100 to be safe in case the preceding
-    // code becomes more efficient.
-    __delay_cycles(10000);
-       
-    cc2500_tx_packet(&p_radio_tx_buffer[1], (2 + sizeof(rssi_table) ),
-                                                p_tx_packet->destination );
-    led1_off();   
-    
-  }
-  
-  // Not masking the packet type so that PACKET_START ACK packets don't clear
-  // other device timers.
-  if ( PACKET_START == ( p_rx_packet->type ) )
-  {
-    // Reset timer_a
-    clear_timer();
-    counter = LED_BLINK_CYCLES;
+    counter = TIMER_CYCLES;
     //led1_on();
     ack_required = 1;
-    ack_time = LED_BLINK_CYCLES - (DEVICE_ADDRESS);
+    ack_time = TIMER_CYCLES - (DEVICE_ADDRESS);
     
-  }
-  
-  // Receive other EDs PACKET_START reply and save the RSSI in the table
-  if ( (PACKET_START | FLAG_ACK) == p_rx_packet->type )
+    // Store AP RSSI in table
+    rssi_table[AP_INDEX] = p_buffer[size]; 
+  }     
+  // Receive other EDs PACKET_SYNC reply and save the RSSI in the table
+  else if ( (PACKET_SYNC | FLAG_ACK) == p_rx_packet->type )
   { 
     // Make sure source is within bounds
     if ( ( p_rx_packet->source <= ( MAX_DEVICES - 1 ) )  
