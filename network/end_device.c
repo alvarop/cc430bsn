@@ -30,6 +30,7 @@ static volatile uint8_t ack_time = 0;
 
 // Array to store all RSSIs from other devices
 static volatile uint8_t rssi_table[MAX_DEVICES+1];
+static volatile uint8_t final_rssi_table[MAX_DEVICES+1];
 
 void debug_status();
 
@@ -66,6 +67,7 @@ int main( void )
   {        
     __bis_SR_register( LPM1_bits + GIE );   // Sleep
     __no_operation();
+    
   } 
   
   return 0;
@@ -98,14 +100,10 @@ static uint8_t scheduler (void)
     p_tx_packet->type = PACKET_SYNC | FLAG_ACK;
     
     // Send RSSI table back to AP
-    memcpy(&p_radio_tx_buffer[sizeof(packet_header_t)], (uint8_t*)rssi_table, 
-                                                          sizeof(rssi_table));
-    // Delay before sending reply
-    // Worked with a delay of 55, but using 100 to be safe in case the preceding
-    // code becomes more efficient.
-    //__delay_cycles(10000);
+    memcpy( &p_radio_tx_buffer[sizeof(packet_header_t)], 
+                      (uint8_t*)final_rssi_table, sizeof(final_rssi_table) );
        
-    cc2500_tx_packet(&p_radio_tx_buffer[1], (2 + sizeof(rssi_table) ),
+    cc2500_tx_packet(&p_radio_tx_buffer[1], (sizeof(packet_header_t) + sizeof(final_rssi_table) ),
                                                 p_tx_packet->destination );
                                                 
     led1_off();   
@@ -142,6 +140,13 @@ static uint8_t rx_callback( uint8_t* p_buffer, uint8_t size )
     ack_required = 1;
     ack_time = TIMER_CYCLES - (DEVICE_ADDRESS);
     
+    // Save current table so we can send it later
+    memcpy( (uint8_t*)final_rssi_table, (uint8_t*)rssi_table, 
+                                                  sizeof(final_rssi_table) );
+    
+    // clean rssi table
+    memset( (uint8_t*)rssi_table, MIN_RSSI, sizeof(rssi_table) );
+       
     // Store AP RSSI in table
     rssi_table[AP_INDEX] = p_buffer[size]; 
   }     
@@ -149,7 +154,7 @@ static uint8_t rx_callback( uint8_t* p_buffer, uint8_t size )
   else if ( (PACKET_SYNC | FLAG_ACK) == p_rx_packet->type )
   { 
     // Make sure source is within bounds
-    if ( ( p_rx_packet->source <= ( MAX_DEVICES - 1 ) )  
+    if ( ( p_rx_packet->source <= ( MAX_DEVICES ) )  
                              && ( p_rx_packet->source > 0) )
     {
       // Store RSSI in table

@@ -42,7 +42,7 @@ typedef struct
 #define FLAG_BURST ( 0x20 )
 
 // Determines the number of timer overflows required to make a 'cycle'
-#define TIMER_CYCLES (11)
+#define TIMER_CYCLES (18)
 
 // Time to transmit RSSI table
 #define TIME_TX_RSSI (TIMER_CYCLES - MAX_DEVICES - 1)

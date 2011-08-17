@@ -64,7 +64,6 @@ static uint8_t (* const states[])(void) = { state_wait, state_process_packet,
                                                   state_command };
 
 static volatile uint8_t counter = TIMER_CYCLES;
-static volatile uint8_t send_sync_message = 0;
 
 // Local radio buffers
 static uint8_t p_radio_tx_buffer[RADIO_BUFFER_SIZE];
@@ -126,6 +125,8 @@ int main( void )
   // Enable interrupts
   eint();
   
+  __no_operation();
+  
   for (;;) 
   {
     
@@ -157,13 +158,16 @@ static uint8_t scheduler (void)
   if( 0 == counter-- )
   {
     counter = TIMER_CYCLES;
-    send_sync_message = 1;
   }
   
   // Send RSSI table to host
   if( counter == TIME_TX_RSSI )
   {
+    //print("tx");
     uart_write_escaped((uint8_t*)rssi_table, sizeof(rssi_table));
+    
+    // clean rssi table
+    memset( (uint8_t*)rssi_table, MIN_RSSI, sizeof(rssi_table) );
   }
   
   return 0;
@@ -175,12 +179,12 @@ static uint8_t scheduler (void)
  * ****************************************************************************/
 static uint8_t sync_message (void)
 {
-  if (send_sync_message)
+  if (TIMER_CYCLES == counter)
   {
     // Transmit sync message and reset flag
     cc2500_tx( (uint8_t *)sync_packet, 4 );
-    send_sync_message = 0;
-    print("\r\n");
+    
+    led1_toggle();
   }
   
   return 0;
@@ -223,21 +227,15 @@ static uint8_t state_process_packet(void)
     {
       // Store RSSI in table
       rssi_table[AP_INDEX][rx_packet->source] = 
-                                      p_radio_rx_buffer[last_packet_size];
+                                          p_radio_rx_buffer[last_packet_size];
                                       
       // Copy RSSI table from packet to master table
-      memcpy( &rssi_table[rx_packet->source], 
-              &p_radio_rx_buffer[sizeof(packet_header_t)], sizeof(rssi_table) );
+      memcpy( (uint8_t*)rssi_table[rx_packet->source], 
+              &p_radio_rx_buffer[sizeof(packet_header_t)], (MAX_DEVICES + 1) );
       
       // Since the device replied to the poll, we can assume it is 'active'
       device_table[rx_packet->source] |= DEVICE_ACTIVE;
-      
-      // Display the address of device that sent the packet
-      string[0] = rx_packet->source + '0';
-      string[1] = 0;
-      print(string);
-      print(" ");
-      
+            
     }
     else
     {
@@ -290,10 +288,10 @@ static uint8_t rx_callback( uint8_t* p_buffer, uint8_t size )
     // This means that another packet is still being processed
   }
 
-  // Copy received message to local rx buffer
+  // Copy received message to local rx buffer. ( size+1 accounts for RSSI byte )
   // NOTE: Could just point to the radio library buffer instead, but would need 
   // to worry about overwriting it while it's still being processed
-  memcpy( p_radio_rx_buffer, p_buffer, size );
+  memcpy( p_radio_rx_buffer, p_buffer, ( size + 1 ) );
   
   // Since the packet size is not in the received packet, we need to save it for
   // later use
