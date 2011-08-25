@@ -1,13 +1,37 @@
 DEMOAP_OBJS += \
-	$(LIB_OBJS) \
+	lib/leds.o \
+	lib/oscillator.o \
+	lib/uart.o \
+	lib/intrinsics.o \
+	lib/hal_pmm.o \
+	lib/radio.o \
+	lib/timers.o \
+	lib/RF1A.o \
+	lib/RfRegSettings.o \
 	demo/access_point.o
 
 DEMOED_OBJS += \
-	$(LIB_OBJS) \
+	lib/leds.o \
+	lib/oscillator.o \
+	lib/uart.o \
+	lib/intrinsics.o \
+	lib/hal_pmm.o \
+	lib/radio.o \
+	lib/timers.o \
+	lib/RF1A.o \
+	lib/RfRegSettings.o \
 	demo/end_device.o
 
 DEMORE_OBJS += \
-	$(LIB_OBJS) \
+	lib/leds.o \
+	lib/oscillator.o \
+	lib/uart.o \
+	lib/intrinsics.o \
+	lib/hal_pmm.o \
+	lib/radio.o \
+	lib/timers.o \
+	lib/RF1A.o \
+	lib/RfRegSettings.o \
 	demo/relay.o
 
 demoap: $(addprefix $(BUILD_DIR)/, $(DEMOAP_OBJS))

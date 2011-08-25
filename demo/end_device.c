@@ -37,6 +37,21 @@ typedef struct
   uint8_t lqi_crcok;
 } packet_footer_t;
 
+//
+// Gain control definitions
+//
+#define CTRL1 ( BIT2 )
+#define CTRL2 ( BIT1 )
+#define CTRL3 ( BIT0 )
+#define CTRL4 ( BIT5 )
+#define CTRL5 ( BIT4 )
+#define CTRL6 ( BIT3 )
+
+#define GC_MASK ( 0x3F )
+
+#define GCOUT P4OUT
+#define GCDIR P4DIR
+
 uint8_t start_sample();
 uint8_t process_rx( uint8_t*, uint8_t );
 uint8_t send_samples();
@@ -69,6 +84,17 @@ int main( void )
   // Initialize UART for communications at 115200baud
   //setup_uart();
   
+  // Setup gain control
+  
+  // Turn outputs off
+  GCOUT  &= ~GC_MASK;
+
+  // Set pins 4.0-4.5 to outputs
+  GCDIR  |= GC_MASK;
+  
+  // Set GC to 150Hz gain 1 [5k, 0.2uF] (??)
+  //GCOUT |= CTRL5 + CTRL6;
+  
   setup_adc();
    
   // Initialize LEDs
@@ -89,10 +115,10 @@ int main( void )
   setup_radio( process_rx );
   
   // Lower power so relays can be used
-  WriteSinglePATable(0x0D);
+  //WriteSinglePATable(0x0D);
   
   // Full Power
-  //WriteSinglePATable(0xC0);
+  WriteSinglePATable(0xC0);
   
   // Enable interrupts, otherwise nothing will work
   eint();
