@@ -31,12 +31,13 @@ static uint8_t (*rx_callback)( uint8_t*, uint8_t ) = dummy_callback;
 //
 // Optimum PATABLE levels according to Table 31 on CC2500 datasheet
 //
-static const uint8_t power_table[] = { 
+/*static const uint8_t power_table[] = { 
                               0x00, 0x50, 0x44, 0xC0, // -55, -30, -28, -26 dBm
                               0x84, 0x81, 0x46, 0x93, // -24, -22, -20, -18 dBm
                               0x55, 0x8D, 0xC6, 0x97, // -16, -14, -12, -10 dBm
                               0x6E, 0x7F, 0xA9, 0xBB, // -8,  -6,  -4,  -2  dBm
                               0xFE, 0xFF };           //  0,   1            dBm 
+*/
 
 /*******************************************************************************
  * @fn     void setup_radio( uint8_t (*callback)(void) )
@@ -44,17 +45,18 @@ static const uint8_t power_table[] = {
  * ****************************************************************************/
 void setup_cc2500( uint8_t (*callback)(uint8_t*, uint8_t) )
 {
-  uint8_t tx_power = 0xFB;  // Maximum power
-
+  uint8_t max_power = 0xff;
+  
   // Set-up rx_callback function
   rx_callback = callback;
   
- initialize_radio();        // Reset radio
+  initialize_radio();        // Reset radio
   
   __delay_cycles(100);      // Let radio settle (Won't configure unless you do?)
 
-  write_rf_settings();      // Initialize settings                            
-  write_burst_register(PATABLE, &tx_power, 1 ); // Set TX power
+  write_rf_settings();      // Initialize settings
+                            // Set TX power to maximum
+  write_burst_register( PATABLE, &max_power, 1 ); 
  
   strobe( SRX );            // Set radio to RX mode
 
@@ -133,15 +135,9 @@ void cc2500_set_channel( uint8_t channel )
  * @brief  Set device transmit power
  * ****************************************************************************/
 void cc2500_set_power( uint8_t power )
-{
-  // Make sure not to read values outside the power table
-  if ( power > sizeof(power_table) )
-  {
-    power = sizeof(power_table) - 1;
-  }
-  
+{  
   // Set TX power
-  write_burst_register(PATABLE, (uint8_t *)&power_table[power], 1 ); 
+  write_burst_register(PATABLE, &power, 1 ); 
 }
 
 /*******************************************************************************
