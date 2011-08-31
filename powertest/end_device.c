@@ -51,12 +51,6 @@ int main( void )
   
   setup_spi();
   
-  setup_timer_a(MODE_CONTINUOUS);
-  
-  register_timer_callback( scheduler, 1 );
-
-  set_ccr( 1, 32768 );
-  
   setup_cc2500( rx_callback );
   
   cc2500_set_address( DEVICE_ADDRESS );
@@ -69,47 +63,6 @@ int main( void )
     __no_operation();
     
   } 
-  
-  return 0;
-}
-
-/*******************************************************************************
- * @fn     uint8_t scheduler( void )
- * @brief  timer_a callback function, takes care of time-related functions
- * ****************************************************************************/
-static uint8_t scheduler (void)
-{
-
-  if( 0 == counter-- )
-  {
-    //led1_toggle();
-    counter = TIMER_CYCLES;        
-  }
-  
-  if( ack_required && (counter == ack_time) )
-  {
-    packet_header_t* p_tx_packet;  
-
-    led1_on();
-
-    p_tx_packet = (packet_header_t*)p_radio_tx_buffer;
-    
-    // Setup ack packet
-    p_tx_packet->destination = 0x00;
-    p_tx_packet->source = DEVICE_ADDRESS;
-    p_tx_packet->type = PACKET_SYNC | FLAG_ACK;
-    
-    // Send RSSI table back to AP
-    memcpy( &p_radio_tx_buffer[sizeof(packet_header_t)], 
-                      (uint8_t*)final_rssi_table, sizeof(final_rssi_table) );
-       
-    cc2500_tx_packet(&p_radio_tx_buffer[1], (sizeof(packet_header_t) + sizeof(final_rssi_table) ),
-                                                p_tx_packet->destination );
-                                                
-    led1_off();   
-    
-    ack_required = 0;
-  }
   
   return 0;
 }
@@ -140,11 +93,13 @@ static uint8_t rx_callback( uint8_t* p_buffer, uint8_t size )
     p_tx_packet = (packet_header_t*)p_radio_tx_buffer;
     
     // Setup ack packet
-    p_tx_packet->destination = 0x00;
+    p_tx_packet->destination = p_rx_packet->source;
     p_tx_packet->source = DEVICE_ADDRESS;
     p_tx_packet->type = PACKET_POLL | FLAG_ACK;
+    p_tx_packet->tx_power = 0x7f;
+    p_tx_packet->rx_power = p_buffer[size];
        
-    __delay_cycles(500);
+    __delay_cycles(1000);
        
     cc2500_tx_packet(&p_radio_tx_buffer[1], (sizeof(packet_header_t) ),
                                                 p_tx_packet->destination );

@@ -87,6 +87,12 @@ static volatile uint8_t processing_packet = 0;
 // Instead of re-building the poll packet every time, just save it in memory
 static const uint8_t poll_packet[] = {0x03, 0x00, DEVICE_ADDRESS, PACKET_POLL};
 
+typedef struct
+{
+  uint8_t tx_power;
+  uint8_t rx_power;
+  uint8_t rssi;
+} power_control_t;
 
 int main( void )
 {   
@@ -160,6 +166,7 @@ static uint8_t state_process_packet(void)
 {
   packet_header_t* rx_packet;
   
+  
   led2_on();
   
   dint();
@@ -170,8 +177,12 @@ static uint8_t state_process_packet(void)
 
   if ( (PACKET_POLL | FLAG_ACK) == rx_packet->type )
   { 
+    power_control_t serial_packet;
+    serial_packet.tx_power = rx_packet->tx_power;
+    serial_packet.rx_power = rx_packet->rx_power;
+    serial_packet.rssi = p_radio_rx_buffer[last_packet_size];
     // Send RSSI
-    uart_write_escaped(&p_radio_rx_buffer[last_packet_size],1);
+    uart_write_escaped(&serial_packet,3);
   }
 
   // Return to waiting state
@@ -242,9 +253,11 @@ static uint8_t run_serial_command( uint8_t command )
 {
   led1_toggle();
   
+  cc2500_set_power( command );
+  
   // Transmit sync message and reset flag
   cc2500_tx( (uint8_t *)poll_packet, 4 );
-     
+ /*    
   // Check to be sure the command is in range
   if( ( command >= FIRST_COMMAND ) && 
       ( command < ( FIRST_COMMAND + sizeof(serial_commands)/2 ) ) )
@@ -264,7 +277,7 @@ static uint8_t run_serial_command( uint8_t command )
     // No need to wake up processor with invalid commands
     return 0;
   }
-  
+  */
 }
 
 /*******************************************************************************

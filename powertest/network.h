@@ -20,6 +20,8 @@ typedef struct
   // The first four bits of the packet type are used as flags, while the last
   // four are the actual packet type
   uint8_t type;
+  uint8_t tx_power;
+  uint8_t rx_power;
 } packet_header_t;
 
 #define MAX_DEVICES (6)
