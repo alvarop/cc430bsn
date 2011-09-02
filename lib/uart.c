@@ -148,12 +148,12 @@ void uart_write_escaped( uint8_t* buffer, uint16_t length )
 {
   uint16_t buffer_index;
     
-  uart_put_char( 0x7e );
+  uart_put_char( SYNC_BYTE );
   for( buffer_index = 0; buffer_index < length; buffer_index++ )
   {
-    if( (buffer[buffer_index] == 0x7e) | (buffer[buffer_index] == 0x7d) )
+    if( (buffer[buffer_index] == SYNC_BYTE) | (buffer[buffer_index] == ESCAPE_BYTE) )
     {
-      uart_put_char( 0x7d ); // Escape byte
+      uart_put_char( ESCAPE_BYTE ); // Escape byte
       uart_put_char( buffer[buffer_index] ^ 0x20 );
     }
     else
@@ -161,7 +161,7 @@ void uart_write_escaped( uint8_t* buffer, uint16_t length )
       uart_put_char( buffer[buffer_index] );
     }
   }
-  uart_put_char( 0x7e );
+  uart_put_char( SYNC_BYTE );
 }
 
 /*******************************************************************************

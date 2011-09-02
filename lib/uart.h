@@ -23,6 +23,8 @@
 #define CSn_PxDIR       P3DIR
 #define CSn_PIN         BIT0
 
+#define SYNC_BYTE 0x7E
+#define ESCAPE_BYTE 0x7D
 
 void setup_uart( void );
 
