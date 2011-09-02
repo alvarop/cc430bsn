@@ -141,6 +141,26 @@ void cc2500_set_power( uint8_t power )
 }
 
 /*******************************************************************************
+ * @fn     cc2500_enable_addressing( );
+ * @brief  Enable address checking with 0x00 as a broadcast address
+ * ****************************************************************************/
+void cc2500_enable_addressing()
+{  
+  cc2500_settings.pktctrl1 = ( cc2500_settings.pktctrl1 & ~0x03 ) | 0x02;
+  write_register( &cc2500_settings.pktctrl1 );
+}
+
+/*******************************************************************************
+ * @fn     cc2500_disable_addressing( );
+ * @brief  Disable address checking
+ * ****************************************************************************/
+void cc2500_disable_addressing()
+{  
+  cc2500_settings.pktctrl1 = ( cc2500_settings.pktctrl1 & ~0x03 );
+  write_register( &cc2500_settings.pktctrl1 );
+}
+
+/*******************************************************************************
  * @fn     void dummy_callback( void )
  * @brief  empty function works as default callback
  * ****************************************************************************/

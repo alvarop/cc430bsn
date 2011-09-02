@@ -20,5 +20,8 @@ void cc2500_set_address( uint8_t );
 void cc2500_set_channel( uint8_t );
 void cc2500_set_power( uint8_t );
 
+void cc2500_enable_addressing();
+void cc2500_disable_addressing();
+
 #endif /* _RADIO_CC2500_H */\
 
