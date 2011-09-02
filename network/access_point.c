@@ -32,14 +32,22 @@
 
 #include <string.h>
 
+#undef DEVICE_ADDRESS
 #define DEVICE_ADDRESS (MAX_DEVICES + 1)
 
-#define print(x) uart_write( x, strlen(x) )
+#if DEBUG_ON
+#define debug(x) uart_write( x, strlen(x) )
+// DEBUG for printing statements
+uint8_t string[100];
+#warning Debugging functions enabled. Regular output disabled.
+#else
+#define debug(x) // Disabled debug(x)
+#endif
 
 static uint8_t sync_message (void);
 static uint8_t scheduler (void);
 static uint8_t rx_callback( uint8_t*, uint8_t );
-static uint8_t run_serial_command( uint8_t );
+static uint8_t serial_callback( uint8_t );
 
 #define FIRST_COMMAND '0'
 
@@ -69,8 +77,16 @@ static volatile uint8_t counter = TIMER_CYCLES;
 static uint8_t p_radio_tx_buffer[RADIO_BUFFER_SIZE];
 static uint8_t p_radio_rx_buffer[RADIO_BUFFER_SIZE];
 
+static uint8_t p_serial_rx_buffer[RADIO_BUFFER_SIZE];
+
 // Table with all the RSSIs from all devices. This is sent back to the host.
 static volatile uint8_t rssi_table[MAX_DEVICES+1][MAX_DEVICES+1];
+
+// Table storing all device transmit powers
+static volatile uint8_t power_table[MAX_DEVICES];
+
+// Table storing all device routes
+static volatile uint8_t routing_table[MAX_DEVICES];
 
 // Table listing all devices that responded in the current cycle
 static volatile uint8_t device_table[MAX_DEVICES+1];
@@ -88,9 +104,6 @@ static volatile uint8_t processing_packet = 0;
 // Instead of re-building the sync packet every time, just save it in memory
 static const uint8_t sync_packet[] = {0x03, 0x00, DEVICE_ADDRESS, PACKET_SYNC};
 
-// DEBUG for printing statements
-uint8_t string[100];
-
 int main( void )
 {   
   /* Init watchdog timer to off */
@@ -104,8 +117,13 @@ int main( void )
   __delay_cycles(4000);
       
   setup_uart(); 
-  setup_uart_callback( run_serial_command );  
+  setup_uart_callback( serial_callback );  
   setup_spi();
+
+  // Initialize routing and power tables
+  memset( (uint8_t*)power_table, 0xFF, sizeof(power_table) );
+  memset( (uint8_t*)routing_table, DEVICE_ADDRESS, sizeof(routing_table) );
+
   setup_timer_a(MODE_CONTINUOUS);
   
   register_timer_callback( scheduler, 1 );
@@ -116,6 +134,7 @@ int main( void )
   
   setup_cc2500( rx_callback );  
   cc2500_set_address( DEVICE_ADDRESS );
+  cc2500_disable_addressing();
        
   setup_leds();
   
@@ -163,8 +182,11 @@ static uint8_t scheduler (void)
   // Send RSSI table to host
   if( counter == TIME_TX_RSSI )
   {
-    //print("tx");
+#if DEBUG_ON == 0
     uart_write_escaped((uint8_t*)rssi_table, sizeof(rssi_table));
+#endif
+    
+    debug("Dump Table\r\n");
     
     // clean rssi table
     memset( (uint8_t*)rssi_table, MIN_RSSI, sizeof(rssi_table) );
@@ -181,12 +203,28 @@ static uint8_t sync_message (void)
 {
   if (TIMER_CYCLES == counter)
   {
-    // Transmit sync message and reset flag
-    cc2500_tx( (uint8_t *)sync_packet, 4 );
+    packet_header_t* p_tx_packet = (packet_header_t*)p_radio_tx_buffer;  
     
-    led1_toggle();
+    // Setup packet
+    p_tx_packet->destination = 0x00;        // Broadcast
+    p_tx_packet->source = DEVICE_ADDRESS;
+    p_tx_packet->type = PACKET_SYNC;
+    
+    // Send RSSI table back to AP
+    memcpy( &p_radio_tx_buffer[sizeof(packet_header_t)], 
+             (uint8_t*)routing_table, sizeof(routing_table) );
+                      
+    memcpy( &p_radio_tx_buffer[sizeof(packet_header_t) + sizeof(routing_table)], 
+             (uint8_t*)power_table, sizeof(power_table) );
+
+           
+    cc2500_tx_packet( &p_radio_tx_buffer[1], 
+      ( sizeof(packet_header_t) + sizeof(routing_table) + sizeof(power_table) ), 
+      p_tx_packet->destination );
+    
+    //led1_toggle();
   }
-  
+    //debug("Sync sent\r\n");
   return 0;
 }
 
@@ -210,7 +248,7 @@ static uint8_t state_process_packet(void)
 {
   packet_header_t* rx_packet;
   
-  led2_on();
+  //led2_on();
   
   dint();
   processing_packet = 1;
@@ -221,20 +259,23 @@ static uint8_t state_process_packet(void)
   if ( (PACKET_SYNC | FLAG_ACK) == rx_packet->type )
   { 
     
-    // Make sure source is within bounds
-    if ( ( rx_packet->source <= ( MAX_DEVICES ) )  
-                             && ( rx_packet->source > 0) )
+    // Make sure source and origin are within bounds
+    if ( ( ( rx_packet->source <= ( MAX_DEVICES ) )  
+                                && ( rx_packet->source > 0 ) )
+        && ( ( rx_packet->origin <= ( MAX_DEVICES ) ) 
+                                && ( rx_packet->origin > 0 ) ) )
+                             
     {
       // Store RSSI in table
       rssi_table[AP_INDEX][rx_packet->source] = 
                                           p_radio_rx_buffer[last_packet_size];
                                       
       // Copy RSSI table from packet to master table
-      memcpy( (uint8_t*)rssi_table[rx_packet->source], 
+      memcpy( (uint8_t*)rssi_table[rx_packet->origin], 
               &p_radio_rx_buffer[sizeof(packet_header_t)], (MAX_DEVICES + 1) );
       
       // Since the device replied to the poll, we can assume it is 'active'
-      device_table[rx_packet->source] |= DEVICE_ACTIVE;
+      device_table[rx_packet->origin] |= DEVICE_ACTIVE;
             
     }
     else
@@ -254,7 +295,7 @@ static uint8_t state_process_packet(void)
   processing_packet = 0;
   eint();
 
-  led2_off();
+  //led2_off();
 
   // Return 0 to put the processor to sleep
   return 0;
@@ -305,12 +346,68 @@ static uint8_t rx_callback( uint8_t* p_buffer, uint8_t size )
 }
 
 /*******************************************************************************
- * @fn     void run_serial_command( uint8_t command )
- * @brief  Run serial commands...
+ * @fn     void serial_callback( uint8_t command )
+ * @brief  Receive serial packets, decode them, and then process them
  * ****************************************************************************/
-static uint8_t run_serial_command( uint8_t command )
+static uint8_t serial_callback( uint8_t rx_byte )
 {
+  static uint8_t receiving_packet;
+  static uint8_t escape_next_character;
+  static uint8_t buffer_index;
   
+  if( receiving_packet )
+  {
+    if( escape_next_character )
+    {
+      escape_next_character = 0;
+      p_serial_rx_buffer[buffer_index++] = rx_byte ^ 0x20;
+    }
+    else if ( ESCAPE_BYTE == rx_byte )
+    {
+      escape_next_character = 1;    
+    }
+    else if ( SYNC_BYTE == rx_byte )
+    {      
+      
+      if( buffer_index == sizeof(routing_table) )
+      {
+        memcpy( (uint8_t*)routing_table, p_serial_rx_buffer, 
+                                                      sizeof(routing_table) );
+        led1_toggle();
+        
+      }
+      else
+      {
+        led1_toggle();
+      }
+      
+      receiving_packet = 0;
+      buffer_index = 0;
+    }
+    else
+    {
+      p_serial_rx_buffer[buffer_index++] = rx_byte;
+    }
+  }
+  else if ( SYNC_BYTE == rx_byte)
+  {
+    receiving_packet = 1;
+  }
+  else
+  {
+    led1_toggle();
+    buffer_index = 0;
+  }
+
+  // Make sure the buffer doesn't overflow
+  if( buffer_index == RADIO_BUFFER_SIZE )
+  {
+    buffer_index = 0;
+    receiving_packet = 0;
+  }
+
+return 0;
+#if 0  
   // Check to be sure the command is in range
   if( ( command >= FIRST_COMMAND ) && 
       ( command < ( FIRST_COMMAND + sizeof(serial_commands)/2 ) ) )
@@ -330,6 +427,7 @@ static uint8_t run_serial_command( uint8_t command )
     // No need to wake up processor with invalid commands
     return 0;
   }
+#endif
   
 }
 

@@ -14,15 +14,16 @@
  */
 typedef struct
 {
-  uint8_t destination;
-  uint8_t source;
+  uint8_t destination;  // Packet destination
+  uint8_t source;       // Packet source
   
   // The first four bits of the packet type are used as flags, while the last
   // four are the actual packet type
   uint8_t type;
+  uint8_t origin;       // Origin of packet (Used when relaying)
 } packet_header_t;
 
-#define MAX_DEVICES (6)
+#define MAX_DEVICES (3)
 
 #define BROADCAST_ADDRESS (0x00)
 

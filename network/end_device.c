@@ -19,6 +19,10 @@
 #define DEVICE_ADDRESS 0xFF
 #endif
 
+#if DEVICE_ADDRESS > MAX_DEVICES
+#warning Device address out of bounds.
+#endif
+
 static uint8_t scheduler (void);
 static uint8_t rx_callback( uint8_t*, uint8_t );
 
@@ -32,7 +36,11 @@ static volatile uint8_t ack_time = 0;
 static volatile uint8_t rssi_table[MAX_DEVICES+1];
 static volatile uint8_t final_rssi_table[MAX_DEVICES+1];
 
-void debug_status();
+// Table storing all device transmit powers
+static volatile uint8_t power_table[MAX_DEVICES];
+
+// Table storing all device routes
+static volatile uint8_t routing_table[MAX_DEVICES];
 
 int main( void )
 {   
@@ -48,26 +56,22 @@ int main( void )
   __delay_cycles(4000);
       
   setup_uart();
-  
   setup_spi();
   
   setup_timer_a(MODE_CONTINUOUS);
-  
   register_timer_callback( scheduler, 1 );
-
   set_ccr( 1, 32768 );
   
   setup_cc2500( rx_callback );
-  
   cc2500_set_address( DEVICE_ADDRESS );
+  cc2500_disable_addressing();
        
   setup_leds();
            
   for (;;) 
   {        
     __bis_SR_register( LPM1_bits + GIE );   // Sleep
-    __no_operation();
-    
+    __no_operation();    
   } 
   
   return 0;
@@ -95,16 +99,18 @@ static uint8_t scheduler (void)
     p_tx_packet = (packet_header_t*)p_radio_tx_buffer;
     
     // Setup ack packet
-    p_tx_packet->destination = 0x00;
+    p_tx_packet->destination = routing_table[DEVICE_ADDRESS - 1];
     p_tx_packet->source = DEVICE_ADDRESS;
+    p_tx_packet->origin = DEVICE_ADDRESS;
     p_tx_packet->type = PACKET_SYNC | FLAG_ACK;
     
     // Send RSSI table back to AP
     memcpy( &p_radio_tx_buffer[sizeof(packet_header_t)], 
                       (uint8_t*)final_rssi_table, sizeof(final_rssi_table) );
        
-    cc2500_tx_packet(&p_radio_tx_buffer[1], (sizeof(packet_header_t) + sizeof(final_rssi_table) ),
-                                                p_tx_packet->destination );
+    cc2500_tx_packet( &p_radio_tx_buffer[1], 
+        ( sizeof(packet_header_t) + sizeof(final_rssi_table) ),
+                                    p_tx_packet->destination );
                                                 
     led1_off();   
     
@@ -136,13 +142,25 @@ static uint8_t rx_callback( uint8_t* p_buffer, uint8_t size )
     clear_timer();
     
     counter = TIMER_CYCLES;
-    //led1_on();
+    
     ack_required = 1;
     ack_time = TIMER_CYCLES - (DEVICE_ADDRESS);
+    
+    // Store routing table
+    memcpy(  (uint8_t*)routing_table, 
+            &p_buffer[sizeof(packet_header_t)], sizeof(routing_table) );
+    
+    // Store power table
+    memcpy(  (uint8_t*)power_table, 
+            &p_buffer[sizeof(packet_header_t) + sizeof(routing_table)], 
+            sizeof(power_table) );
     
     // Save current table so we can send it later
     memcpy( (uint8_t*)final_rssi_table, (uint8_t*)rssi_table, 
                                                   sizeof(final_rssi_table) );
+
+    // Update transmit power from table
+    cc2500_set_power( power_table[DEVICE_ADDRESS - 1] );
     
     // clean rssi table
     memset( (uint8_t*)rssi_table, MIN_RSSI, sizeof(rssi_table) );
@@ -158,7 +176,21 @@ static uint8_t rx_callback( uint8_t* p_buffer, uint8_t size )
                              && ( p_rx_packet->source > 0) )
     {
       // Store RSSI in table
-      rssi_table[p_rx_packet->source] = p_buffer[size];    
+      rssi_table[p_rx_packet->source] = p_buffer[size];
+      
+      // If this packet was addressed to this device, relay it
+      if( DEVICE_ADDRESS == p_rx_packet->destination )
+      {
+        // Send the packet to the appropriate destination
+        p_rx_packet->destination = routing_table[DEVICE_ADDRESS - 1];
+        
+        // TODO add delay here?
+        __delay_cycles(100);
+        
+        // Relay message
+        cc2500_tx_packet( &p_buffer[1], size, p_rx_packet->destination );
+        
+      }
     }
   }
   

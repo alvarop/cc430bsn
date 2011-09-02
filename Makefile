@@ -18,11 +18,15 @@ LIB_OBJS = $(patsubst %.c, %.o, $(LIB_SOURCE))
 # Can be changed by adding 'ADDRESS=0xXX' to the make command
 ADDRESS = 0x00
 
+#debugging disabled by default
+DEBUG = 0
+
 CFLAGS += \
 	-mmcu=$(CPU) -O1 -mno-stack-init -mendup-at=main -Wall -g \
 	-D"__MSP430F2274__" \
 	-DMHZ_915_CUSTOM \
 	-DDEVICE_ADDRESS=$(ADDRESS) \
+	-DDEBUG_ON=$(DEBUG) \
 	-I"." \
 	-I"lib" \
 

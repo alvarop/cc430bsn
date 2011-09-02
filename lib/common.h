@@ -10,7 +10,5 @@
 #include <io.h>
 #include <stdint.h>
 
-#define debug(x) uart_write( x, strlen(x) )
-
 #endif /* _COMMON_H */\
 
