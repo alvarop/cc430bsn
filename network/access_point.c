@@ -295,7 +295,7 @@ static uint8_t state_process_packet(void)
   processing_packet = 0;
   eint();
 
-  //led2_off();
+  led2_off();
 
   // Return 0 to put the processor to sleep
   return 0;
@@ -328,6 +328,8 @@ static uint8_t rx_callback( uint8_t* p_buffer, uint8_t size )
     //print("err pp\r\n");
     // This means that another packet is still being processed
   }
+  
+  led2_on();
 
   // Copy received message to local rx buffer. ( size+1 accounts for RSSI byte )
   // NOTE: Could just point to the radio library buffer instead, but would need 
@@ -340,6 +342,8 @@ static uint8_t rx_callback( uint8_t* p_buffer, uint8_t size )
   
   // Change the current state so that the packet will be processed after the ISR
   current_state = STATE_PROCESS_PACKET;
+  
+  
   
   // Return 1 to wake-up processor after ISR
   return 1;
@@ -369,11 +373,15 @@ static uint8_t serial_callback( uint8_t rx_byte )
     else if ( SYNC_BYTE == rx_byte )
     {      
       
-      if( buffer_index == sizeof(routing_table) )
+      if( buffer_index == ( sizeof(routing_table) + sizeof(power_table) ) )
       {
-        memcpy( (uint8_t*)routing_table, p_serial_rx_buffer, 
+        memcpy( (uint8_t*)routing_table, &p_serial_rx_buffer[0], 
                                                       sizeof(routing_table) );
-        led1_toggle();
+        
+        memcpy( (uint8_t*)power_table, 
+                                    &p_serial_rx_buffer[sizeof(routing_table)], 
+                                                        sizeof(power_table) );
+        
         
       }
       else
@@ -395,7 +403,7 @@ static uint8_t serial_callback( uint8_t rx_byte )
   }
   else
   {
-    led1_toggle();
+    //led1_toggle();
     buffer_index = 0;
   }
 
