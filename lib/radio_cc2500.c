@@ -68,6 +68,8 @@ void setup_cc2500( uint8_t (*callback)(uint8_t*, uint8_t) )
  * ****************************************************************************/
 void cc2500_tx( uint8_t* p_buffer, uint8_t length )
 {
+  uint16_t timeout = 5000;
+  
   GDO0_PxIE &= ~GDO0_PIN;          // Disable interrupt
   
   write_burst_register( FIFO, p_buffer, length );
@@ -75,12 +77,36 @@ void cc2500_tx( uint8_t* p_buffer, uint8_t length )
   strobe( STX );                   // Change to TX mode, start data transfer
   
                                    // Wait until GDO0 goes high (sync word txed) 
-  while ( !( GDO0_PxIN & GDO0_PIN ) );
+  while ( !( GDO0_PxIN & GDO0_PIN ) && timeout )
+  {
+    // Radio getting stuck during transmission sometimes, adding timeout to
+    // continue. One failed tx should not halt the whole program
+    timeout--;
+  }
 
   // Transmitting
+                                    // Wait until GDO0 goes low (end of packet)
+  while ( ( GDO0_PxIN & GDO0_PIN ) && timeout )
+  {
+    // Radio getting stuck during transmission sometimes, adding timeout to
+    // continue. One failed tx should not halt the whole program
+    timeout--;
+  }   
 
-  while ( GDO0_PxIN & GDO0_PIN );   // Wait until GDO0 goes low (end of packet)
+//
+// The radio gets stuck in the previous while loops from time to time
+// I'm not quite sure how to debug that problem at the moment, so I implemented
+// This timeout fix for the time being. 
+//
+#warning timeout radio fix implemented. Need to figure out why this happens
 
+  // If the radio got stuck, reset it to resume normal operation
+  if( timeout == 0 )
+  {
+
+    // reset the radio
+    setup_cc2500( rx_callback );
+  }
   // Only needed if radio is configured to return to IDLE after transmission
   // Check register MCSM1.TXOFF_MODE
   //strobe( SRX ); 
