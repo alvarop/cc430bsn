@@ -235,7 +235,10 @@ static uint8_t dummy_callback( void )
 interrupt (TIMERA_CCR0_VECTOR) timerA0Interrupt(void)
 {  
 
-  ccr_callbacks[0]();
+  if ( ccr_callbacks[0]() )
+  {
+    __bic_SR_register_on_exit(LPM1_bits);
+  }
 
 }
 
@@ -291,7 +294,7 @@ interrupt (TIMERA_OTHER_VECTOR) timerA1Interrupt(void) // CHANGE
 	// Depending on the return value of the callback function, exit LPM3
 	if( wake_up )
 	{
-	  __bic_SR_register_on_exit(LPM3_bits);
+	  __bic_SR_register_on_exit(LPM1_bits);
 	}
 
 }
