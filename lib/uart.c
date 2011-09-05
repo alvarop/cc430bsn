@@ -136,7 +136,13 @@ void uart_write( uint8_t* buffer, uint16_t length )
   
   for( buffer_index = 0; buffer_index < length; buffer_index++ )
   {
-    uart_put_char( buffer[buffer_index] );
+#if defined(__CC430F6137__)
+    while (!(UCA0IFG&UCTXIFG));	// USCI_A0 TX buffer ready?
+    UCA0TXBUF = buffer[buffer_index];
+#elif defined(__MSP430F2274__)
+    while (!(IFG2&UCA0TXIFG));	// USCI_A0 TX buffer ready?
+    UCA0TXBUF = buffer[buffer_index];
+#endif
   }
 }
 
@@ -148,20 +154,48 @@ void uart_write_escaped( uint8_t* buffer, uint16_t length )
 {
   uint16_t buffer_index;
     
-  uart_put_char( SYNC_BYTE );
+#if defined(__CC430F6137__)
+  while (!(UCA0IFG&UCTXIFG));	// USCI_A0 TX buffer ready?
+  UCA0TXBUF = SYNC_BYTE;
+#elif defined(__MSP430F2274__)
+  while (!(IFG2&UCA0TXIFG));	// USCI_A0 TX buffer ready?
+  UCA0TXBUF = SYNC_BYTE;
+#endif
+
   for( buffer_index = 0; buffer_index < length; buffer_index++ )
   {
     if( (buffer[buffer_index] == SYNC_BYTE) | (buffer[buffer_index] == ESCAPE_BYTE) )
     {
-      uart_put_char( ESCAPE_BYTE ); // Escape byte
-      uart_put_char( buffer[buffer_index] ^ 0x20 );
+#if defined(__CC430F6137__)
+      while (!(UCA0IFG&UCTXIFG));	// USCI_A0 TX buffer ready?
+      UCA0TXBUF = ESCAPE_BYTE;
+      while (!(UCA0IFG&UCTXIFG));	// USCI_A0 TX buffer ready?
+      UCA0TXBUF = buffer[buffer_index] ^ 0x20;
+#elif defined(__MSP430F2274__)
+      while (!(IFG2&UCA0TXIFG));	// USCI_A0 TX buffer ready?
+      UCA0TXBUF = ESCAPE_BYTE;
+      while (!(IFG2&UCA0TXIFG));	// USCI_A0 TX buffer ready?
+      UCA0TXBUF = buffer[buffer_index] ^ 0x20;
+#endif      
     }
     else
     {
-      uart_put_char( buffer[buffer_index] );
+#if defined(__CC430F6137__)
+      while (!(UCA0IFG&UCTXIFG));	// USCI_A0 TX buffer ready?
+      UCA0TXBUF = buffer[buffer_index];
+#elif defined(__MSP430F2274__)
+      while (!(IFG2&UCA0TXIFG));	// USCI_A0 TX buffer ready?
+      UCA0TXBUF = buffer[buffer_index];
+#endif
     }
   }
-  uart_put_char( SYNC_BYTE );
+#if defined(__CC430F6137__)
+  while (!(UCA0IFG&UCTXIFG));	// USCI_A0 TX buffer ready?
+  UCA0TXBUF = SYNC_BYTE;
+#elif defined(__MSP430F2274__)
+  while (!(IFG2&UCA0TXIFG));	// USCI_A0 TX buffer ready?
+  UCA0TXBUF = SYNC_BYTE;
+#endif
 }
 
 /*******************************************************************************
