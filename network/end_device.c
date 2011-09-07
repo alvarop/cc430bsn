@@ -187,7 +187,7 @@ static uint8_t state_process_packet(void)
     counter = TIMER_CYCLES;
     
     ack_required = 1;
-    ack_time = TIMER_CYCLES - (DEVICE_ADDRESS);
+    ack_time = TIMER_CYCLES - ( DEVICE_ADDRESS * TIME_SCALE_FACTOR );
     
     // Store routing table
     memcpy(  (uint8_t*)routing_table, 

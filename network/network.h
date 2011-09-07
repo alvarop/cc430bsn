@@ -42,11 +42,14 @@ typedef struct
 // The BURST flag is used to identify a multi-packet transmission
 #define FLAG_BURST ( 0x20 )
 
+// Makes the cycle x times longer
+#define TIME_SCALE_FACTOR (2)
+
 // Determines the number of timer overflows required to make a 'cycle'
-#define TIMER_CYCLES (18)
+#define TIMER_CYCLES (18 * TIME_SCALE_FACTOR)
 
 // Time to transmit RSSI table
-#define TIME_TX_RSSI (TIMER_CYCLES - MAX_DEVICES - 1)
+#define TIME_TX_RSSI ( TIMER_CYCLES - ( MAX_DEVICES * TIME_SCALE_FACTOR ) - 2 * TIME_SCALE_FACTOR )
 
 // Since RSSI is in 2's complement form, -128 is the smallest possible value
 // 0x80 is the representation for -128. This number will be used as an RSSI when

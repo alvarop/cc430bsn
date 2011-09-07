@@ -37,13 +37,11 @@
 
 #if DEBUG_ON
 #define debug(x) uart_write( x, strlen(x) )
-#define dbg(x) uart_put_char(x)
 // DEBUG for printing statements
 uint8_t string[100];
 #warning Debugging functions enabled. Regular output disabled.
 #else
 #define debug(x) // Disabled debug(x)
-#define dbg(x) // Disabled dbg(x)
 #endif
 
 static uint8_t sync_message (void);
@@ -157,11 +155,10 @@ int main( void )
   
   __no_operation();
   
-  dbg('~');
+
   
   for (;;) 
   {
-    dbg('c');
     // Check that we are in a valid state
     if ( current_state >= TOTAL_STATES )
     {
@@ -172,7 +169,6 @@ int main( void )
     // Call the current state function and put the processor to sleep if needed
     if( 0 == states[current_state]() )
     {
-      dbg('<');
       __bis_SR_register( LPM1_bits + GIE );   // Sleep
     }
     
@@ -187,7 +183,7 @@ int main( void )
  * ****************************************************************************/
 static uint8_t scheduler (void)
 {
-  dbg('s');
+
   // Count down TIMER_CYCLES between sync messages
   if( 0 == counter-- )
   {
@@ -200,7 +196,7 @@ static uint8_t scheduler (void)
     current_state = STATE_SEND_DATA;
     return 1;
   }
-  dbg('S');
+
   return 0;
 }
 
@@ -210,22 +206,19 @@ static uint8_t scheduler (void)
  * ****************************************************************************/
 static uint8_t sync_message (void)
 {
-  dbg('.');
+
   if (TIMER_CYCLES == counter)
   {
-    dbg('|');
+
     cc2500_tx_packet( &p_radio_tx_buffer[1], 
       ( sizeof(packet_header_t) + sizeof(routing_table) + sizeof(power_table) ), 
       p_tx_packet->destination );
-      
-      dbg('M');
     
     //led1_toggle();
   }
   else if ( 1 == counter )
   {
     current_state = STATE_BUILD_SYNC;
-    dbg('m');
     return 1;
   }
   
@@ -240,7 +233,7 @@ static uint8_t sync_message (void)
 static uint8_t state_wait(void)
 {
   // Do nothing
-  dbg('w');
+
   // Return 0 to put the processor to sleep
   return 0;
 }
@@ -251,7 +244,7 @@ static uint8_t state_wait(void)
  * ****************************************************************************/
 static uint8_t state_send_data(void)
 {
-  dbg('d');
+
 #if DEBUG_ON == 0
   uart_write_escaped((uint8_t*)rssi_table, sizeof(rssi_table));
 #endif
@@ -261,7 +254,7 @@ static uint8_t state_send_data(void)
     
   // clean rssi table
   memset( (uint8_t*)rssi_table, MIN_RSSI, sizeof(rssi_table) );
-  dbg('D');
+
   // Return 0 to put the processor to sleep
   return 0;
 }
@@ -273,7 +266,7 @@ static uint8_t state_send_data(void)
 static uint8_t state_process_packet(void)
 {
   packet_header_t* rx_packet;
-  dbg('p');
+
   //led2_on();
   
   dint();
@@ -322,7 +315,7 @@ static uint8_t state_process_packet(void)
   eint();
 
   led2_off();
-  dbg('P');
+
   // Return 0 to put the processor to sleep
   return 0;
 }
@@ -333,13 +326,13 @@ static uint8_t state_process_packet(void)
  * ****************************************************************************/
 static uint8_t state_command(void)
 {
-  dbg('c');
+
   // Run function associated with last command
   serial_commands[last_serial_command - FIRST_COMMAND]();
   
   // Return to waiting state
   current_state = STATE_WAIT;
-  dbg('C');
+
   // Return 0 to put the processor to sleep
   return 0;
 }
@@ -350,7 +343,7 @@ static uint8_t state_command(void)
  * ****************************************************************************/
 static uint8_t state_build_sync(void)
 {
-  dbg('b');
+
   // Build sync message
   memcpy( &p_radio_tx_buffer[sizeof(packet_header_t)], 
            (uint8_t*)routing_table, sizeof(routing_table) );
@@ -371,7 +364,7 @@ static uint8_t state_build_sync(void)
  * ****************************************************************************/
 static uint8_t rx_callback( uint8_t* p_buffer, uint8_t size )
 { 
-  dbg('r');
+
   if( processing_packet == 1 )
   {
     //print("err pp\r\n");
@@ -393,7 +386,7 @@ static uint8_t rx_callback( uint8_t* p_buffer, uint8_t size )
   current_state = STATE_PROCESS_PACKET;
   
   
-  dbg('R');
+
   // Return 1 to wake-up processor after ISR
   return 1;
 }
@@ -462,7 +455,7 @@ static uint8_t serial_callback( uint8_t rx_byte )
     buffer_index = 0;
     receiving_packet = 0;
   }
-  dbg('?');
+
 return 0;
 #if 0  
   // Check to be sure the command is in range
@@ -494,7 +487,7 @@ return 0;
  * ****************************************************************************/
 static void command_null(void)
 {
-  dbg('n');
+
   // Do nothing
 }
 
